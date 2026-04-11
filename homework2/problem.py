@@ -71,11 +71,18 @@ def get_activation_function(activation_name):
 
 
 def run_training(
-    model, epochs, loss_function, optimizer, training_loader, validation_loader
+    model,
+    epochs,
+    loss_function,
+    optimizer,
+    training_loader,
+    validation_loader,
+    file_name,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
     model.to(device)
+    best_validation_loss = np.inf
 
     for epoch in range(epochs):
         model.train()
@@ -96,6 +103,10 @@ def run_training(
             running_loss += loss.item()
         avg_t_loss = running_loss / len(training_loader)
         avg_v_loss = validate_model(model, validation_loader, loss_function, device)
+        if avg_v_loss < best_validation_loss:
+            print(avg_v_loss)
+            best_validation_loss = avg_v_loss
+            torch.save(model.state_dict(), "./saved_models/" + file_name)
         print(
             f"Epoch {epoch +1}/{epochs}, Training loss: {avg_t_loss}, Validation loss: {avg_v_loss}"
         )
@@ -140,11 +151,14 @@ def plot_roc(model, loader, F1_classifier, file_name):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    roc = tm.ROC(task="binary")
+    roc = tm.ROC(task="binary").to(device)
+    F1_classifier = F1_classifier.to(device)
 
-    for inputs, label in loader:
-        roc.update(model(inputs.to(device)), label.long().to(device))
-        F1_classifier.update(model(inputs.to(device)), label.long().to(device))
+    for inputs, labels in loader:
+        inputs, labels = inputs.to(device), labels.long().to(device)
+        outputs = model(inputs)
+        roc.update(outputs, labels)
+        F1_classifier.update(outputs, labels)
     final_F1 = F1_classifier.compute()
 
     fig, ax = roc.plot(score=True)
@@ -160,13 +174,15 @@ def plot_roc(model, loader, F1_classifier, file_name):
 
 def problem1():
     resolution = 64
-    layers = [resolution * resolution, 10, 10, 1]
+    layers = [resolution * resolution, 3, 3, 1]
 
     act_funcs = ["ReLU", "ReLU", "sigmoid"]
-    epochs = 10
+    epochs = 15
     learning_rate = 0.001
 
     loss_function = nn.BCELoss()
+
+    file_name = "mlp_easy_data_set"
 
     data = ImageDictDataset(pd.read_pickle("./simple_particle_dataset.pkl"))
     plot_images(data, "./figures/problem1/plot_training_set.png")
@@ -185,11 +201,16 @@ def problem1():
     print(mlp)
 
     optimizer = torch.optim.RMSprop(mlp.parameters(), lr=learning_rate)
+    run_training(
+        mlp, epochs, loss_function, optimizer, train_loader, test_loader, file_name
+    )
 
-    run_training(mlp, epochs, loss_function, optimizer, train_loader, test_loader)
+    trained_model = MultilayerPerception(layers, act_funcs)
+    trained_model.load_state_dict(torch.load("./saved_models/mlp_easy_data_set"))
+    trained_model.to(torch.device("cuda"))
 
-    F1_score = BinaryF1Score().to(torch.device("cuda"))
-    plot_roc(mlp, test_loader, F1_score, "./figures/problem1/roc_curve.png")
+    F1_score = BinaryF1Score()
+    plot_roc(trained_model, test_loader, F1_score, "./figures/problem1/roc_curve.png")
 
 
 def main():
