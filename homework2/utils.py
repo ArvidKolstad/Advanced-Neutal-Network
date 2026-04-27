@@ -192,6 +192,7 @@ def run_training(
     print(device)
     model.to(device)
     best_validation_loss = np.inf
+    params = model.state_dict()
 
     for epoch in range(epochs):
         model.train()
@@ -217,10 +218,12 @@ def run_training(
             scheduler.step(avg_v_loss)
         if avg_v_loss < best_validation_loss:
             best_validation_loss = avg_v_loss
-            torch.save(model.state_dict(), "./saved_models/" + file_name)
+            params = model.state_dict()
         print(
             f"Epoch {epoch +1}/{epochs}, Training loss: {avg_t_loss:.5f}, Validation loss: {avg_v_loss:.5f}"
         )
+
+    torch.save(params, "./saved_models/" + file_name)
     return best_validation_loss
 
 
