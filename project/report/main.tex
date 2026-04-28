@@ -1,0 +1,349 @@
+% ****** Start of file template-TIF360-FYM360-blindtext.tex ******
+%
+% use on Overleaf!!!!
+%
+\documentclass[%
+ reprint,
+ amsmath,amssymb,
+ aps,
+]{revtex4-2}
+
+\usepackage{graphicx}% Include figure files
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{bm}% bold math
+\usepackage{hyperref}% add hypertext capabilities
+%\usepackage[mathlines]{lineno}% Enable numbering of text and display math
+%\linenumbers\relax % Commence numbering lines
+\usepackage{xcolor}
+
+\usepackage{lipsum}
+
+\begin{document}
+
+\title{[C] Can a computer detect human sarcasm?}
+
+\author{Arvid Kolstad}
+
+\date{\today}% It is always \today, today,
+%  but any date may be explicitly specified
+
+\begin{abstract} %%% DO NOT CHANGE!
+	%%% - B1 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+	%%% Customize this part: text between - B1 - and - E1 - must not appear in the final report 
+
+	\noindent{Social} behavior in humans are a complex subject that can seem almost impossible to fully understand. A good example of this are usage of sarcasm in interactions, which is famously easily to create misunderstandings, especially when written, because of intonation and voice features are often used to clear markers for a sarcastic comment. Therefore this project aims to explore how well different machine learning models can classify sarcasm from orinary sentences. The models that will be examined are Logistic regression with TF-IDF features, LSTM and BERT. The data that will be used to training, validation and testing will be sarcastic comments taken from two social media platforms. After training and validation, the models preformance was compared and the result was ---. (Some more discussion will be added here too)
+
+	%%% - E1 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\begin{description} %%% DO NOT CHANGE!
+		\item[Project Topic] %%% DO NOT CHANGE!
+		      {Sarcasm Detection in Social Media}
+		\item[Teaching Assistant] %%% DO NOT CHANGE!
+		      {-} % CHANGE accordingly
+	\end{description} %%% DO NOT CHANGE!
+\end{abstract}
+
+\maketitle
+
+
+
+
+\section{\label{sec:intro}Introduction} %%% DO NOT CHANGE!
+
+%%% - B2 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B2 - and - E2 - must not appear in the final report 
+\noindent
+\fbox{\parbox[t][][t]{\columnwidth}{
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{5}} out of \textbf{44}
+
+		In this section you have to:
+		Provide the reader of the general context of the research question that you chose to investigate, providing the relevant peer-reviewed references.  For example, a citation looks like \cite{surname1999peer} or \cite{cognome2001what, smullyan2025what}.
+
+		Remember: No subsectioning in the introduction.
+
+		For references, use the command $\backslash${\tt cite}$\{\cdots\}$. \\
+		Example: $\backslash${\tt cite}$\{${\tt polya1945how}$\}$ gives \cite{polya1945how}.
+		Use the bib file {\tt biblio-TIF360-FYM360.bib} (provided with this template) for the bib items.
+	}}
+
+%%% - E2 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+\section{\label{sec:overview}Overview} %%% DO NOT CHANGE!
+
+%%% - B3 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B3 - and - E3 - must not appear in the final report 
+\noindent
+\fbox{\parbox[t][][t]{\columnwidth}{
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{6}} out of \textbf{44}
+
+		{In this section you provide an overview of the state of the art, related work and methods. Mention the methods that you could apply in your project, highlighting their use case scenarios, their features with advantages and disadvantages, and state whether they can be appropriate to use in your project. After this overview, you should state the method/model that you choose and also provide the motivation of your choice.
+			Make a table (see below) to summarize this discussion. Refer to the table (Tab.~\ref{tab:methodsoverview}) in the text.}
+	}}
+
+\begin{table*}
+	\caption{{\bf Overview of ML models used in this project.} Table where the different models used in the project is presented, their features explained and arguments for their fit to the project.
+	}
+	\label{tab:methodsoverview}
+	%\begin{tabular}{|p{2cm}|p{3cm}|p{6cm}|p{6cm}|}  % this doesn't work for oveleaf
+	\begin{tabular}{| l | l | l | l |}
+		\hline
+		\parbox[t]{1.8cm}{
+			{\bf Method }
+		}              &
+		\parbox[t]{3cm}{
+			{\bf Use case scenario }
+		}              &
+		\parbox[t]{6cm}{
+			{\bf Features }
+		}              &
+		\parbox[t]{6cm}{
+			{\bf Suitable for the project? }
+		}                \\
+		\hline
+		\hspace{0.1cm}
+		\parbox{1.8cm}{\begin{flushleft}
+				               Logistic regression with TF-IDF
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		               &
+		\hspace{0.1cm}
+		\parbox{2.8cm}{\begin{flushleft}
+				               Model
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		               &
+		\hspace{0.1cm}
+		\parbox{5.5cm}{\begin{flushleft}
+				               Fast and simple model that is easy to interpret and train. Looks at the importance of each word in the sentence to classify it. Probably too simple for classifying harder sentences.
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		               &
+		\hspace{0.1cm}
+		\parbox{5.5cm}{\begin{flushleft}
+				               Well studied method that is used for getting a base line performance on the data set.
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		\\
+		\hline
+		\hspace{0.1cm}
+		\parbox{1.8cm}{\begin{flushleft}
+				               LSTM
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		               &
+		\hspace{0.1cm}
+		\parbox{2.8cm}{\begin{flushleft}
+				               Model
+			               \end{flushleft}}
+		\hspace{0.1cm} &
+		\hspace{0.1cm}
+		\parbox{5.5cm}{\begin{flushleft}
+				               Can capture word order which is important for sarcasm. Can connect words over larger distances in sentences. Also solves the vanishing gradient problem.
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		               &
+		\hspace{0.1cm}
+		\parbox{5.5cm}{\begin{flushleft}
+				               Medium size model that works great for text classification.
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		\\
+		\hline
+		\hspace{0.1cm}
+		\parbox{1.8cm}{\begin{flushleft}
+				               BERT
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		               &
+		\hspace{0.1cm}
+		\parbox{2.8cm}{\begin{flushleft}
+				               Model
+			               \end{flushleft}}
+		\hspace{0.1cm} &
+		\hspace{0.1cm}
+		\parbox{5.5cm}{\begin{flushleft}
+				               An already pre-trained language model that can be used to classify sarcasm by fine tuning it by setting a linear layer after it and finetuning the whole model on the specific data set. The model is quite large and therefore it can be computationaly intensive to train.
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		               &
+		\hspace{0.1cm}
+		\parbox{5.5cm}{\begin{flushleft}
+				               Large model that already a good understanding about our language, which makes it perfect for using in this setting.
+
+			               \end{flushleft}}
+		\hspace{0.1cm}
+		\\
+		\hline
+	\end{tabular}
+\end{table*}
+
+
+{\bf Method 1 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{prenom2017find, surname1999peer}.]}
+
+{\bf Method 2 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{prenom2017find, surname1999peer}.]}
+
+{\bf Method 3 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{prenom2017find, surname1999peer}.]}
+
+%%% - E3 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\section{\label{sec:method}Method} %%% DO NOT CHANGE!
+
+%%% - B4 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B4 - and - E4 - must not appear in the final report 
+\begin{figure*}
+	\centering
+	\includegraphics[width=\textwidth]{Fig1_placeholder.pdf}
+	\caption{{\bf Method employed (change this text according to your project).} Write some explanatory text for the figure. Make sure that the figure is referenced in the text. The caption should be such that, together with the figure, allows the reader to understand the concepts in the figure itself.
+		\textcolor{blue}{\bf A figure describing the method/model is MANDATORY.} Missing to include a figure causes a {\bf deduction} (-3  points).
+	}
+	\label{fig:selectedmethod}
+\end{figure*}
+
+\noindent
+\fbox{\parbox[t][][t]{\columnwidth}{
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{8}} out of \textbf{44}
+
+		Provide here the details of the method you have chosen for the project.
+		You should explain and provide enough detail such that your results can be reproduced following your method.
+		Compose a figure that contains / describes your method (mandatory). Refer to the figure (Fig.~\ref{fig:selectedmethod}) when describing the method in the text.
+		You can add a second figure if you believe it is necessary.
+	}}
+%%% - E4 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+\section{\label{sec:results}Results and Discussion} %%% DO NOT CHANGE!
+
+%%% - B5 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B5 - and - E5 - must not appear in the final report 
+\noindent
+\fbox{\parbox[t][][t]{\columnwidth}{
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{8}} out of \textbf{44}
+
+		Here report and discuss the results of the project.
+
+		Remember to organize your results properly.
+
+		Reference your figures in the discussion. Example: Fig.~\ref{fig:res1}.
+	}}
+
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\columnwidth]{Fig3.pdf}
+	\caption{{\bf Title Figure.} Write some explanatory text for the figure. Make sure that the figure is referenced in the text. The caption should be such that, together with the figure, allows the reader to understand the concepts in the figure itself.}
+	\label{fig:res1}
+\end{figure}
+
+
+At some point in the discussion, Reference Fig.~\ref{fig:res2}. \\
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\columnwidth]{Fig2.pdf}
+	\caption{{\bf Title Figure.} Write some explanatory text for the figure. Make sure that the figure is referenced in the text. The caption should be such that, together with the figure, allows the reader to understand the concepts in the figure itself.}
+	\label{fig:res2}
+\end{figure}
+
+%%% - E5 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\section{\label{sec:conclusion}Conclusions and Outlook} %%% DO NOT CHANGE!
+
+%%% - B6 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B6 - and - E6 - must not appear in the final report 
+\noindent
+\fbox{\parbox[t][][t]{\columnwidth}{
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{4}} out of \textbf{44}
+
+		Here conclusions and outlook.
+	}}
+
+
+%%% - E6 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+\section{\label{sec:Contribution}Contributions} %%% DO NOT CHANGE!
+
+%%% - B7 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B7 - and - E7 - must not appear in the final report 
+\noindent
+\fbox{\parbox[t][][t]{\columnwidth}{
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
+
+		Mandatory in all cases (also in the case of 1-person team).
+
+		Add some text. See a possible text below.
+	}}
+Example: A.B. and C.D. conceived and implemented ... (adapt). E.F., G.H., contributed to .... etc etc. All authors ... (adapt).
+%%% - E7 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\section{\label{sec:COI}Conflict of Interest} %%% DO NOT CHANGE!
+
+%%% - B8 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B8 - and - E8 - must not appear in the final report 
+\noindent
+\fbox{\parbox[b][][t]{\columnwidth}{
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
+
+		Add some text. See a possible text below.
+	}}
+
+{{\bf Note:} A conflict of interest can also be known as {\emph competing interest}. A conflict of interest can occur when you, or your employer, or sponsor have a financial, commercial, legal, or professional relationship with other organizations, or with the people working with them, that could influence your research.
+	For example check here:} \href{https://authorservices.taylorandfrancis.com/editorial-policies/competing-interest/}{https://authorservices.taylorandfrancis.com/editorial-policies/competing-interest/}
+%%% - E8 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\section{\label{sec:datacode}Data and Code Availability} %%% DO NOT CHANGE!
+
+%%% - B9 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B9 - and - E9 - must not appear in the final report 
+\noindent
+\fbox{\parbox[b][][t]{\columnwidth}{
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
+
+		Add some text. See a possible text below.
+	}}
+
+Data is available for download at ....  / can be accessed from ....
+
+All source code and examples are made publicly available at ... . The version used in this study is archived in ... with DOI ...
+%%% - E9 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%% - B10 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Customize this part: text between - B10 - and - E10 - must not appear in the final report 
+\noindent
+\fbox{\parbox[b][][t]{\columnwidth}{
+		Score for correct amount of relevant, peer reviewed {\bf References}:
+		\textbf{Points:} \fbox{\bf \textcolor{magenta}{5}} out of \textbf{44}
+	}}
+
+
+
+
+
+\bibliography{biblio-TIF360-FYM360} %%% DO NOT CHANGE!
+% Produces the bibliography via BibTeX.
+
+\end{document}
