@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "deeplay>=0.1.4",
+    "kagglehub[pandas,pandas-dataset,pandas-datasets]>=1.0.0",
     "matplotlib>=3.10.8",
     "pandas>=3.0.2",
     "scikit-learn>=1.8.0",
