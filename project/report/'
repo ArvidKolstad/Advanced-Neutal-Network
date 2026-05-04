@@ -57,7 +57,7 @@
 		\textbf{Points:} \fbox{\bf \textcolor{magenta}{5}} out of \textbf{44}
 
 		In this section you have to:
-		Provide the reader of the general context of the research question that you chose to investigate, providing the relevant peer-reviewed references.  For example, a citation looks like \cite{SharmaEtAl2026} or \cite{JamilEtAl2021, Karamaker2025, EkeEtAl202021, ZambreEtAl2025}.
+		Provide the reader of the general context of the research question that you chose to investigate, providing the relevant peer-reviewed references.  For example, a citation looks like \cite{EkeEtAl202021,Karamaker2025,JamilEtAl2021} or \cite{SharmaEtAl2026}.
 
 		Remember: No subsectioning in the introduction.
 
@@ -183,11 +183,11 @@
 \end{table*}
 
 
-{\bf Method 1 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{ZambreEtAl2025}.]}
+{\bf Method 1 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{prenom2017find, surname1999peer}.]}
 
-{\bf Method 2 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{Karamaker2025}.]}
+{\bf Method 2 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{prenom2017find, surname1999peer}.]}
 
-{\bf Method 3 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{EkeEtAl202021}.]}
+{\bf Method 3 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{prenom2017find, surname1999peer}.]}
 
 %%% - E3 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
