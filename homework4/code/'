@@ -9,15 +9,15 @@ from torch import nn
 class GenerateAttentionMatrixes(nn.Module):
     def __init__(self, in_features, trans_dim, encoder=None):
         super().__init__()
-        if isinstance(encoder, type(None)):
-            self.encoder = torch.zeros(trans_dim)
-        else:
+        if encoder:
             self.encoder = encoder
+        else:
+            self.encoder = torch.zeros(trans_dim)
 
         self.embedder = nn.Linear(in_features, trans_dim)
-        self.get_query = nn.Identity(trans_dim, trans_dim)
-        self.get_key = nn.Identity(trans_dim, trans_dim)
-        self.get_value = nn.Identity(trans_dim, trans_dim)
+        self.get_query = nn.Linear(trans_dim, trans_dim)
+        self.get_key = nn.Linear(trans_dim, trans_dim)
+        self.get_value = nn.Linear(trans_dim, trans_dim)
 
         self.get_attention_matrix = DotProductAttention()
 
@@ -69,13 +69,8 @@ def plot_weather_data(data, columns):
     fig.savefig("../figures/problem2/plot_weather_data.png")
 
 
-def linear_encoding(time_steps, embedded_dim):
-    encoding = (
-        torch.tensor(np.arange(0, time_steps, 1) / time_steps)
-        .float()
-        .unsqueeze(1)
-        .expand(-1, embedded_dim)
-    )
+def linear_encoding(time_steps):
+    encoding = torch.tensor(np.arange(0, time_steps, 1) / time_steps)
     return encoding
 
 
@@ -87,58 +82,30 @@ def periodic_encoding(time_steps, embedding_dim):
             encoding.append(np.sin(i / (10000 ** (j / embedding_dim))))
         else:
             encoding.append(np.cos(i / (10000 ** (j / embedding_dim))))
-    encoding = torch.tensor(np.vstack(encoding)).permute(1, 0).float()
-
+    encoding = torch.tensor(np.vstack(encoding))
     return encoding
-
-
-class LearnablePeriodicEncoding(nn.Module):
-    def __init__(self, time_steps, embedding_dim):
-        super().__init__()
-        self.frequencies = nn.Parameter(torch.rand(embedding_dim) * embedding_dim / 2)
-        self.time_steps = time_steps
-
-    def forward(self):
-        i = torch.arange(self.time_steps).float().unsqueeze(1)
-        angles = i * self.frequencies.unsqueeze(0)
-
-        encoding = torch.zeros_like(angles)
-        encoding[:, 0::2] = torch.sin(angles[:, 0::2])
-        encoding[:, 1::2] = torch.cos(angles[:, 1::2])
-        return encoding
 
 
 def main():
     dataframe = pd.read_csv("jena_climate_2009_2016.csv", index_col=0)
     data = dataframe.values
-    in_features = 14
-    time_steps = 144
 
     """
     header = dataframe.columns.tolist()
     plot_weather_data(data, header)
     """
-    data_normalized = (data - data.mean(axis=0)) / (data.std(axis=0) + 1e-8)
+    windowed_data = torch.tensor(data[0:144, :]).float()
+    attention_matrix = GenerateAttentionMatrixes(14, 100)
 
-    windowed_data = torch.tensor(data_normalized[0:time_steps, :]).float()
-
-    m = [5, 10, 30, 55, 80, 100]
-
-    fig, axs = plt.subplots(1, 6, figsize=(40, 8))
+    fig, axs = plt.subplots(1, 6)
     for idx, ax in enumerate(axs):
-        attention_matrix = GenerateAttentionMatrixes(
-            in_features,
-            m[idx],
-            encoder=LearnablePeriodicEncoding(time_steps, m[idx])(),
-        )
         _, saved_am = attention_matrix(windowed_data)
         saved_am = saved_am.detach().numpy()
 
         im = ax.imshow(saved_am)
-        ax.set_title(f"M = {m[idx]} ", size=40)
-        fig.colorbar(im, ax=ax)
-    fig.tight_layout()
-    fig.savefig("../figures/problem2/attention_matrix_periodic_learn.png")
+        fig.colorbar(im)
+
+    fig.savefig("../figures/problem2/attention_matrix_none.png")
 
 
 if __name__ == "__main__":
