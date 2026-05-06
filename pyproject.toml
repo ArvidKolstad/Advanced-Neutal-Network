@@ -9,6 +9,8 @@ dependencies = [
     "deeptrack>=2.0.1",
     "kaggle>=2.1.0",
     "lightning[extra]>=2.6.1",
+    "seaborn>=0.13.2",
+    "tensorboard>=2.20.0",
     "torch>=2.11.0",
     "torchvision>=0.26.0",
 ]
