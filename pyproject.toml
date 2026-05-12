@@ -7,8 +7,11 @@ requires-python = ">=3.13"
 dependencies = [
     "deeplay>=0.1.4",
     "deeptrack>=2.0.1",
+    "fasttext>=0.9.3",
     "kaggle>=2.1.0",
+    "kagglehub>=1.0.1",
     "lightning[extra]>=2.6.1",
+    "scikit-learn>=1.8.0",
     "seaborn>=0.13.2",
     "tensorboard>=2.20.0",
     "torch>=2.11.0",
