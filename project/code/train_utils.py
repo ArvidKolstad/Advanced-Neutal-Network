@@ -1,7 +1,26 @@
 from sklearn.model_selection import StratifiedKFold
 from torch.utils.data import DataLoader, Dataset
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime
+from data_preprocess import SarcasmDataset
+import os
+
+
+class Logger(SummaryWriter):
+    def __init__(self):
+        super().__init__()
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.log_dir = os.path.join("runs", f"LogReg_{self.timestamp}")
+        os.makedirs(self.log_dir, exist_ok=True)
+
+    def update_loss(self, avg_loss, epoch_number):
+        self.add_scalar("Loss Functions training", avg_loss, epoch_number)
+
+    def update_f1_score(self, avg_f1_score, epoch_number):
+        self.add_scalar("F1-score validation", avg_f1_score, epoch_number)
 
 
 def kCV(
@@ -138,6 +157,36 @@ def hyper_parameter_opt(
 
     if redo_data:
         params[get_dict("data")] = original_data_set
+
+
+def train_val_split(
+    df: pd.DataFrame, val_frac: float
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    val_data_0_idx = df[df["label"] == 0].sample(frac=val_frac).index
+    val_data_1_idx = df[df["label"] == 1].sample(frac=val_frac).index
+    train_data = df.drop(index=val_data_0_idx)
+    train_data = train_data.drop(index=val_data_1_idx)
+
+    val_data = pd.concat(
+        [df.loc[val_data_0_idx], df.loc[val_data_1_idx]], ignore_index=True
+    ).sample(frac=1)
+    return train_data, val_data
+
+
+def create_dataset_fast_text(df: pd.DataFrame) -> Dataset:
+    comments = df["comment"].to_list()
+    labels = df["label"].to_numpy()
+    marks = df[
+        [
+            "all_caps_count",
+            "exclamation_marks",
+            "exclamation_question",
+            "dot_dot_dot_counts",
+        ]
+    ].to_numpy()
+
+    dataset = SarcasmDataset(comments, marks, labels)
+    return dataset
 
 
 def main():

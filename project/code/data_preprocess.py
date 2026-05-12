@@ -1,4 +1,5 @@
 import kagglehub as kh
+import torch
 import re
 import string
 import numpy as np
@@ -24,8 +25,10 @@ class SarcasmDataset(Dataset):
 
     def __getitem__(self, index):
         sentences_vector = self.embedder.get_sentence_vector(self.sentences[index])
-        x = np.concatenate((sentences_vector, self.sarcasm_markers[index]), axis=None)
-        y = self.labels[index]
+        x = torch.tensor(
+            np.concatenate((sentences_vector, self.sarcasm_markers[index]), axis=None)
+        ).float()
+        y = torch.tensor(self.labels[index]).unsqueeze(-1).float()
         return x, y
 
 
@@ -81,10 +84,11 @@ def need_external_embedding(model):
 def text_preprocess(data_frame: pd.DataFrame, model: str) -> pd.DataFrame:
     data_frame = data_frame.astype({"comment": str})
     data_frame.dropna(inplace=True)
+    data_frame = data_frame.sample(frac=1, ignore_index=True)
     data_frame.reset_index(drop=True, inplace=True)
 
     if need_external_embedding(model):
-        batch_features = extract_sarcasm_features(data_frame["comment"].to_list)
+        batch_features = extract_sarcasm_features(data_frame["comment"].to_list())
 
         data_frame["comment"] = data_frame["comment"].str.replace(
             f"[{re.escape(string.punctuation)}]", "", regex=True
@@ -98,13 +102,14 @@ def text_preprocess(data_frame: pd.DataFrame, model: str) -> pd.DataFrame:
 
 def main():
     wanted_columns = ["label", "comment"]
-    train_data = load_dataset(
-        "reddit",
-        wanted_columns,
-        train=True,
-    )
-    model = "log_reg"
-    text_preprocess(train_data, model)
+    df = load_dataset("reddit", wanted_columns, train=True)
+    number_of_sarcastic_comments = len(df[df["label"] == 1])
+    number_of_normal_comments = len(df[df["label"] == 0])
+
+    # print(number_of_sarcastic_comments / number_of_normal_comments)
+
+    # model = "log_reg"
+    # text_preprocess(train_data, model)
 
 
 if __name__ == "__main__":
