@@ -1,4 +1,5 @@
 import kagglehub as kh
+from torch.nn.utils.rnn import pad_sequence
 import torch
 import re
 import string
@@ -11,25 +12,49 @@ from torch.utils.data import Dataset
 class SarcasmDataset(Dataset):
     def __init__(
         self,
-        sentences: list,
+        sentences: list[str],
         sarcasm_markers: np.ndarray,
         labels: np.ndarray,
+        model,
     ):
         self.sentences = sentences
         self.sarcasm_markers = sarcasm_markers
         self.labels = labels
         self.embedder = load_fasttext()
+        self.model = model
 
     def __len__(self) -> int:
         return len(self.sentences)
 
     def __getitem__(self, index):
-        sentences_vector = self.embedder.get_sentence_vector(self.sentences[index])
-        x = torch.tensor(
-            np.concatenate((sentences_vector, self.sarcasm_markers[index]), axis=None)
-        ).float()
-        y = torch.tensor(self.labels[index]).unsqueeze(-1).float()
-        return x, y
+        if self.model == "log_reg":
+            sentences_vector = self.embedder.get_sentence_vector(self.sentences[index])
+            x = torch.tensor(
+                np.concatenate(
+                    (sentences_vector, self.sarcasm_markers[index]), axis=None
+                )
+            ).float()
+            y = torch.tensor(self.labels[index]).unsqueeze(-1).float()
+            return x, y
+        elif self.model == "BILSTM":
+            words = self.sentences[index].split()
+            scentences_matrix = torch.from_numpy(
+                np.array([self.embedder.get_word_vector(w) for w in words])
+            ).float()
+            markers = torch.tensor(self.sarcasm_markers[index]).float()
+            labels = torch.tensor(self.labels[index]).float()
+            return scentences_matrix, markers, labels
+
+
+def bilstm_collate(
+    batch,
+):
+    matrices, markers, labels = zip(*batch)
+    padded_matrices = pad_sequence(list(matrices), batch_first=True, padding_value=0.0)
+    lengths = torch.from_numpy(np.array([m.shape[0] for m in matrices]))
+    markers = torch.stack(markers)
+    labels = torch.stack(labels)
+    return (padded_matrices, lengths, markers, labels)
 
 
 def load_fasttext():
@@ -41,14 +66,10 @@ def load_fasttext():
 def load_dataset(
     data_set_name: str,
     wanted_columns: list,
-    train: bool = True,
 ) -> pd.DataFrame:
     if data_set_name == "reddit":
         url = "danofer/sarcasm"
-        if train:
-            file_name = "train-balanced-sarcasm.csv"
-        else:
-            file_name = "test_balanced.csv"
+        file_name = "train-balanced-sarcasm.csv"
     else:
         raise ValueError("No data set with that name is implemented")
     df = kh.dataset_load(
@@ -81,6 +102,36 @@ def need_external_embedding(model):
         return True
 
 
+def create_dataset_fast_text(df: pd.DataFrame, model: str) -> Dataset:
+    comments = df["comment"].to_list()
+    labels = df["label"].to_numpy()
+    marks = df[
+        [
+            "all_caps_count",
+            "exclamation_marks",
+            "exclamation_question",
+            "dot_dot_dot_counts",
+        ]
+    ].to_numpy()
+
+    dataset = SarcasmDataset(comments, marks, labels, model=model)
+    return dataset
+
+
+def train_val_split(
+    df: pd.DataFrame, val_frac: float
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    val_data_0_idx = df[df["label"] == 0].sample(frac=val_frac).index
+    val_data_1_idx = df[df["label"] == 1].sample(frac=val_frac).index
+    train_data = df.drop(index=val_data_0_idx)
+    train_data = train_data.drop(index=val_data_1_idx)
+
+    val_data = pd.concat(
+        [df.loc[val_data_0_idx], df.loc[val_data_1_idx]], ignore_index=True
+    ).sample(frac=1)
+    return train_data, val_data
+
+
 def text_preprocess(data_frame: pd.DataFrame, model: str) -> pd.DataFrame:
     data_frame = data_frame.astype({"comment": str})
     data_frame.dropna(inplace=True)
@@ -97,19 +148,20 @@ def text_preprocess(data_frame: pd.DataFrame, model: str) -> pd.DataFrame:
 
         batch_features = pd.DataFrame(batch_features)
         data_frame = pd.concat((data_frame, batch_features), axis=1)
+    remove_idx = data_frame[
+        data_frame["comment"].str.split().str.len() == 0
+    ].index.tolist()
+    data_frame = data_frame.drop(index=remove_idx)
     return data_frame
 
 
 def main():
+    train_split = 0.75
     wanted_columns = ["label", "comment"]
-    df = load_dataset("reddit", wanted_columns, train=True)
-    number_of_sarcastic_comments = len(df[df["label"] == 1])
-    number_of_normal_comments = len(df[df["label"] == 0])
-
-    # print(number_of_sarcastic_comments / number_of_normal_comments)
-
-    # model = "log_reg"
-    # text_preprocess(train_data, model)
+    df = load_dataset("reddit", wanted_columns)
+    df_train, df_test = train_val_split(df, train_split)
+    df_train.to_csv("data/train.csv")
+    df_test.to_csv("data/test.csv")
 
 
 if __name__ == "__main__":

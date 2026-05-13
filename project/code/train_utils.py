@@ -5,15 +5,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
-from data_preprocess import SarcasmDataset
 import os
 
 
 class Logger(SummaryWriter):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model_name):
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log_dir = os.path.join("runs", f"LogReg_{self.timestamp}")
+        target_dir = os.path.join("runs", f"{model_name}_{self.timestamp}")
+        super().__init__(log_dir=target_dir)
+        self.log_dir = target_dir
+
         os.makedirs(self.log_dir, exist_ok=True)
 
     def update_loss(self, avg_loss, epoch_number):
@@ -173,20 +174,20 @@ def train_val_split(
     return train_data, val_data
 
 
-def create_dataset_fast_text(df: pd.DataFrame) -> Dataset:
-    comments = df["comment"].to_list()
-    labels = df["label"].to_numpy()
-    marks = df[
-        [
-            "all_caps_count",
-            "exclamation_marks",
-            "exclamation_question",
-            "dot_dot_dot_counts",
-        ]
-    ].to_numpy()
+def get_opt_threshold(model, training_loader):
+    thresholds = np.arange(0, 1, 0.01)
+    best_f1_score = 0.0
+    best_threshold = 0.5
+    for threshold in thresholds:
+        print(f"Now testing for threshold: {threshold}")
+        model.threshold = threshold
+        f1_score = model.validate_model(training_loader)
+        if best_f1_score < f1_score:
+            best_f1_score = f1_score
+            best_threshold = threshold
+    model.threshold = best_threshold
 
-    dataset = SarcasmDataset(comments, marks, labels)
-    return dataset
+    return best_threshold, best_f1_score
 
 
 def main():

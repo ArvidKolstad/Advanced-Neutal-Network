@@ -488,3 +488,4 @@ homework2/*.pkl
 project/code/cc.en.300.bin
 project/code/cc.en.300.bin.gz
 project/code/runs/*
+project/code/data/*
