@@ -1,4 +1,5 @@
 import kagglehub as kh
+from transformers import AutoTokenizer
 from torch.nn.utils.rnn import pad_sequence
 import torch
 import re
@@ -9,18 +10,29 @@ import fasttext.util
 from torch.utils.data import Dataset
 
 
+def load_fasttext():
+    fasttext.util.download_model("en", if_exists="ignore")
+    ft = fasttext.load_model("cc.en.300.bin")
+    return ft
+
+
+FAST_TEXT = load_fasttext()
+BERT = AutoTokenizer.from_pretrained("vinai/bertweet-base")
+
+
 class SarcasmDataset(Dataset):
     def __init__(
         self,
         sentences: list[str],
-        sarcasm_markers: np.ndarray,
+        sarcasm_markers,
         labels: np.ndarray,
         model,
     ):
         self.sentences = sentences
         self.sarcasm_markers = sarcasm_markers
         self.labels = labels
-        self.embedder = load_fasttext()
+        self.embedder_fasttext = FAST_TEXT
+        self.embedder_bert = BERT
         self.model = model
 
     def __len__(self) -> int:
@@ -28,7 +40,9 @@ class SarcasmDataset(Dataset):
 
     def __getitem__(self, index):
         if self.model == "log_reg":
-            sentences_vector = self.embedder.get_sentence_vector(self.sentences[index])
+            sentences_vector = self.embedder_fasttext.get_sentence_vector(
+                self.sentences[index]
+            )
             x = torch.tensor(
                 np.concatenate(
                     (sentences_vector, self.sarcasm_markers[index]), axis=None
@@ -39,11 +53,15 @@ class SarcasmDataset(Dataset):
         elif self.model == "BILSTM":
             words = self.sentences[index].split()
             scentences_matrix = torch.from_numpy(
-                np.array([self.embedder.get_word_vector(w) for w in words])
+                np.array([self.embedder_fasttext.get_word_vector(w) for w in words])
             ).float()
             markers = torch.tensor(self.sarcasm_markers[index]).float()
             labels = torch.tensor(self.labels[index]).float()
             return scentences_matrix, markers, labels
+        elif self.model == "BERT":
+            token = self.embedder_bert(self.sentences[index], return_tensor="pt")
+            label = self.labels[index]
+            return token, label
 
 
 def bilstm_collate(
@@ -55,12 +73,6 @@ def bilstm_collate(
     markers = torch.stack(markers)
     labels = torch.stack(labels)
     return (padded_matrices, lengths, markers, labels)
-
-
-def load_fasttext():
-    fasttext.util.download_model("en", if_exists="ignore")
-    ft = fasttext.load_model("cc.en.300.bin")
-    return ft
 
 
 def load_dataset(
@@ -105,16 +117,19 @@ def need_external_embedding(model):
 def create_dataset_fast_text(df: pd.DataFrame, model: str) -> Dataset:
     comments = df["comment"].to_list()
     labels = df["label"].to_numpy()
-    marks = df[
-        [
-            "all_caps_count",
-            "exclamation_marks",
-            "exclamation_question",
-            "dot_dot_dot_counts",
-        ]
-    ].to_numpy()
+    if model != "BERT":
+        marks = df[
+            [
+                "all_caps_count",
+                "exclamation_marks",
+                "exclamation_question",
+                "dot_dot_dot_counts",
+            ]
+        ].to_numpy()
+        dataset = SarcasmDataset(comments, marks, labels, model=model)
+    else:
+        dataset = SarcasmDataset(comments, None, labels, model=model)
 
-    dataset = SarcasmDataset(comments, marks, labels, model=model)
     return dataset
 
 

@@ -1,58 +1,39 @@
 import torch
 import gc
-import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import StratifiedKFold
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import pandas as pd
-from typing import Optional
+from sklearn.model_selection import StratifiedKFold
+from torch import nn
+from torch.utils.data import DataLoader
+from transformers import AutoModel
+from preformance_utils import get_f1_score
 from train_utils import Logger, get_opt_threshold
+from torch.utils.tensorboard import SummaryWriter
 from data_preprocess import (
     text_preprocess,
     create_dataset_fast_text,
     train_val_split,
-    bilstm_collate,
     SarcasmDataset,
 )
-from torch.utils.tensorboard import SummaryWriter
+
 import os
-import torch.nn as nn
-from torch.utils.data import DataLoader
-from preformance_utils import get_f1_score
+from typing import Optional
 
 
-class LongShortTermMemory(nn.Module):
-    def __init__(self, input_dim, hidden_dim, number_of_heads, marks_dim, threshold):
-        super().__init__()
-
-        self.threshold = threshold
+class BERTweet(nn.Module):
+    def __init__(self, dropout_rate, threshold=0.5):
+        super(BERTweet, self).__init__()
+        self.bertweet = AutoModel.from_pretrained("vinai/bertweet-base")
+        self.dropout = nn.Dropout(dropout_rate)
+        self.classifier = nn.Linear(768, 1)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.threshold = threshold
 
-        self.lstm = nn.LSTM(input_dim, hidden_dim, batch_first=True, bidirectional=True)
-        self.attention_layer = nn.Sequential(
-            nn.Linear(2 * hidden_dim, hidden_dim, bias=False),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, number_of_heads, bias=False),
-            nn.Softmax(dim=-2),
-        )
-
-        self.output_layer = nn.Linear(2 * hidden_dim * number_of_heads + marks_dim, 1)
-
-    def forward(self, sentence, lengths, marks):
-
-        packed = pack_padded_sequence(
-            sentence,
-            lengths.cpu(),
-            batch_first=True,
-            enforce_sorted=False,
-        )
-        H, _ = self.lstm(packed)
-        H, _ = pad_packed_sequence(H, batch_first=True)
-        Z = self.attention_layer(H)
-        M = torch.matmul(Z.permute(0, 2, 1), H)
-        concat = torch.cat((torch.flatten(M, start_dim=1), marks), dim=-1)
-
-        output = self.output_layer(concat)
+    def forward(self, x, attention_mask):
+        output = self.bertweet(input_ids=x, attention_mask=attention_mask)
+        first_token_hidden_layer = output.pooler_output
+        layer = self.dropout(first_token_hidden_layer)
+        output = self.classifier(layer)
         return output
 
     def validate_model(self, val_loader: DataLoader, loss_function) -> tuple:
@@ -180,25 +161,23 @@ def kCV(
 ):
 
     skf = StratifiedKFold(n_splits=k, shuffle=True)
-    matrix, marks, labels = training_data
+    matrix, labels = training_data
     loss_over_kcv = np.zeros(k)
 
     for idx, (train_index, val_index) in enumerate(skf.split(matrix, labels)):
         print(f"Now running fold {idx+1}/{k}")
-        train_matrix, train_marks, train_labels = (
+        train_matrix, train_labels = (
             matrix[train_index],
-            marks[train_index],
             labels[train_index],
         )
 
-        val_matrix, val_marks, val_labels = (
+        val_matrix, val_labels = (
             matrix[val_index],
-            marks[val_index],
             labels[val_index],
         )
 
-        train_set = SarcasmDataset(train_matrix, train_marks, train_labels, "BILSTM")
-        val_set = SarcasmDataset(val_matrix, val_marks, val_labels, "BILSTM")
+        train_set = SarcasmDataset(train_matrix, None, train_labels, "BERT")
+        val_set = SarcasmDataset(val_matrix, None, val_labels, "BERT")
 
         train_loader = DataLoader(
             train_set,
@@ -206,7 +185,6 @@ def kCV(
             num_workers=4,
             shuffle=True,
             pin_memory=True,
-            collate_fn=bilstm_collate,
             persistent_workers=False,
         )
 
@@ -217,14 +195,12 @@ def kCV(
             shuffle=False,
             pin_memory=True,
             persistent_workers=False,
-            collate_fn=bilstm_collate,
         )
 
         train_params["train_loader"] = train_loader
 
         train_params["val_loader"] = val_loader
 
-        # 1. Create a local copy of train_params to avoid reference leaks
         local_train_params = train_params.copy()
         local_train_params["train_loader"] = train_loader
         local_train_params["val_loader"] = val_loader
@@ -232,7 +208,6 @@ def kCV(
         m = model(**model_params)
         optimizer_settings["params"] = m.parameters()
 
-        # Create optimizer and scheduler locally
         opt = optimizer(**optimizer_settings)
         local_train_params["optimizer"] = opt
 
@@ -307,7 +282,7 @@ def run_hyperparameter_opt():
         print(f"Now testing {idx+1}/{len(hyper_values)}")
         optimizer_settings["weight_decay"] = value
         mean_val_loss, std_val_loss = kCV(
-            LongShortTermMemory,
+            BERTweet,
             k,
             train_data,
             model_params,
@@ -328,19 +303,16 @@ def run_hyperparameter_opt():
     )
 
 
-def get_trained_model():
-    max_epochs = 10
+def main():
+    max_epochs = 30
     model_params = {
-        "input_dim": 300,
-        "hidden_dim": 128,
-        "number_of_heads": 4,
-        "marks_dim": 4,
+        "dropout_rate": 0.2,
         "threshold": 0.5,
     }
-    model = LongShortTermMemory(**model_params)
+    model = BERTweet(**model_params)
 
     loss_function = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.0)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=5
     )
@@ -349,12 +321,12 @@ def get_trained_model():
 
     df_train = pd.read_csv("./data/train.csv")
 
-    df_train = text_preprocess(df_train, "BILSTM")
+    df_train = text_preprocess(df_train, "BERT")
 
     df_train, df_val = train_val_split(df_train, val_frac)
 
-    data_set_train = create_dataset_fast_text(df_train, model="BILSTM")
-    data_set_val = create_dataset_fast_text(df_val, model="BILSTM")
+    data_set_train = create_dataset_fast_text(df_train, model="BERT")
+    data_set_val = create_dataset_fast_text(df_val, model="BERT")
 
     train_loader = DataLoader(
         data_set_train,
@@ -362,7 +334,6 @@ def get_trained_model():
         num_workers=10,
         shuffle=True,
         pin_memory=True,
-        collate_fn=bilstm_collate,
     )
     val_loader = DataLoader(
         data_set_val,
@@ -370,7 +341,6 @@ def get_trained_model():
         num_workers=10,
         shuffle=False,
         pin_memory=True,
-        collate_fn=bilstm_collate,
     )
 
     train_settings = {
@@ -384,54 +354,8 @@ def get_trained_model():
     }
 
     model.train_params(**train_settings)
-    return model, val_loader
 
-
-def plot_hyper_parameter(path):
-    fig, ax = plt.subplots()
-
-    data = np.load(path)
-    hyper_values = [1e-5, 1e-4, 1e-3, 1e-2]
-    # hyper_values = data["x"]
-    mean, std = data["mean"], data["std"]
-
-    ax.errorbar(hyper_values, mean, yerr=std)
-    ax.set_xscale("log")
-    ax.set_xlabel("L2 regularization")
-    ax.set_ylabel("Validation loss")
-    fig.savefig("../report/figures/hyper_l2reg.pdf")
-
-
-def main():
-    # run_hyperparameter_opt()
-    plot_hyper_parameter("./data/l2_hpv.npz")
-    model, val_loader = get_trained_model()
-
-    model = model.to(torch.device("cuda"))
-
-    best_thershold, best_f1_score = get_opt_threshold(
-        model, val_loader, nn.BCEWithLogitsLoss()
-    )
-    print(f"f1 score {best_f1_score:.4}, threshold function {best_thershold}")
-
-    """
-    df_test = pd.read_csv("./data/test.csv")
-
-    df_test = text_preprocess(df_test, "BILSTM")
-
-    data_set_test = create_dataset_fast_text(df_test, model="BILSTM")
-    test_loader = DataLoader(
-        data_set_test,
-        batch_size=64,
-        num_workers=10,
-        shuffle=False,
-        pin_memory=True,
-        collate_fn=bilstm_collate,
-    )
-    loss_function = nn.BCELoss()
-    f1_score, loss_function = model.validate_model(test_loader, loss_function)
-    print(f"f1 score {f1_score}, loss function {loss_function}")
-    """
+    print("hello")
 
 
 if __name__ == "__main__":
