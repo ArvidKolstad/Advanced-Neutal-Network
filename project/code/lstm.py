@@ -143,7 +143,7 @@ class LongShortTermMemory(nn.Module):
                     print(
                         f"Training loss: {avg_loss:.4f}, Validation loss: {avg_val_loss:.4f}, F1 Score: {avg_f1_score:.4}"
                     )
-                scheduler.step(avg_f1_score)
+                scheduler.step(avg_val_loss)
 
                 if min_val_loss > avg_val_loss:
                     epochs_with_increased_loss = 0

@@ -17,7 +17,7 @@ def load_fasttext():
 
 
 FAST_TEXT = load_fasttext()
-BERT = AutoTokenizer.from_pretrained("vinai/bertweet-base")
+BERT = AutoTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
 
 
 class SarcasmDataset(Dataset):
@@ -59,9 +59,18 @@ class SarcasmDataset(Dataset):
             labels = torch.tensor(self.labels[index]).float()
             return scentences_matrix, markers, labels
         elif self.model == "BERT":
-            token = self.embedder_bert(self.sentences[index], return_tensor="pt")
+            token = self.embedder_bert(
+                self.sentences[index],
+                padding="max_length",
+                max_length=100,
+                truncation=True,
+                return_tensor="pt",
+            )
+            input_ids = torch.tensor(token["input_ids"])
+            attention_mask = torch.tensor(token["attention_mask"])
+
             label = self.labels[index]
-            return token, label
+            return input_ids, attention_mask, label
 
 
 def bilstm_collate(

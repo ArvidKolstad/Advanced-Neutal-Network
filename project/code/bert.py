@@ -43,14 +43,14 @@ class BERTweet(nn.Module):
         total_batches = len(val_loader)
 
         with torch.no_grad():
-            for val_input, val_lengths, val_marks, val_target in val_loader:
-                val_input, val_marks, val_target = (
+            for val_input, val_mask, val_target in val_loader:
+                val_input, val_mask, val_target = (
                     val_input.to(self.device),
-                    val_marks.to(self.device),
+                    val_mask.to(self.device),
                     val_target.to(self.device).float(),
                 )
 
-                logits = self(val_input, val_lengths, val_marks).squeeze()
+                logits = self(val_input, val_mask).squeeze()
                 loss = loss_function(logits, val_target)
 
                 loss_val += loss.item()
@@ -69,15 +69,15 @@ class BERTweet(nn.Module):
         self.train()
         total_loss = 0.0
         total_batches = len(train_loader)
-        for train_input, train_lengths, train_marks, train_labels in train_loader:
+        for train_input, train_mask, train_labels in train_loader:
 
-            train_input, train_marks, train_labels = (
+            train_input, train_mask, train_labels = (
                 train_input.to(self.device),
-                train_marks.to(self.device),
+                train_mask.to(self.device),
                 train_labels.to(self.device).float(),
             )
             optimizer.zero_grad(set_to_none=True)
-            output = self(train_input, train_lengths, train_marks).squeeze()
+            output = self(train_input, train_mask).squeeze()
             loss = loss_function(output, train_labels)
             total_loss += loss.item()
             loss.backward()
@@ -95,11 +95,11 @@ class BERTweet(nn.Module):
         optimizer,
         scheduler,
         logger=True,
-        stopper=12,
+        stopper=1,
     ):
         writer: Optional[SummaryWriter] = None
         if logger:
-            writer = Logger("BILSTM")
+            writer = Logger("BERT")
 
         min_val_loss = float("inf")
         epoch_number = 0
@@ -124,7 +124,7 @@ class BERTweet(nn.Module):
                     print(
                         f"Training loss: {avg_loss:.4f}, Validation loss: {avg_val_loss:.4f}, F1 Score: {avg_f1_score:.4}"
                     )
-                scheduler.step(avg_f1_score)
+                scheduler.step(avg_val_loss)
 
                 if min_val_loss > avg_val_loss:
                     epochs_with_increased_loss = 0
@@ -263,7 +263,7 @@ def run_hyperparameter_opt():
         "patience": 5,
     }
     df_train = pd.read_csv("./data/train.csv")
-    df_train = text_preprocess(df_train, "BILSTM")
+    df_train = text_preprocess(df_train, "BERT")
     comments = df_train["comment"].to_numpy()
     marks = df_train[
         [
@@ -304,7 +304,7 @@ def run_hyperparameter_opt():
 
 
 def main():
-    max_epochs = 30
+    max_epochs = 5
     model_params = {
         "dropout_rate": 0.2,
         "threshold": 0.5,
@@ -312,7 +312,7 @@ def main():
     model = BERTweet(**model_params)
 
     loss_function = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.0)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=5
     )
