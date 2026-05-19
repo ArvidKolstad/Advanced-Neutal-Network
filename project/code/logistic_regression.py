@@ -19,6 +19,9 @@ class LogisticRegression(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.threshold = threshold
 
+    def __str__(self):
+        return "logreg"
+
     def forward(self, x):
         output = self.layer(x)
         return output
@@ -177,16 +180,7 @@ def main():
 
     model.train_params(**train_settings)
 
-    """
-
-    model = LogisticRegression(input_dim).to(torch.device("cuda"))
-    model.load_state_dict(
-        torch.load("./runs/LogReg_20260513_121528/best_model.pth", weights_only=True)
-    )
-
-    best_threshold, best_f1_score = get_opt_threshold(
-        model, train_loader, loss_function
-    )
+    best_threshold, best_f1_score = get_opt_threshold(model, val_loader, loss_function)
 
     print(
         f"Best threshold: {best_threshold:.3f}, with a F1-score of: {best_f1_score:.3f}"
@@ -195,7 +189,6 @@ def main():
 
     f1_score_test, _ = model.validate_model(test_loader, loss_function)
     print(f"Final model F1-score: {f1_score_test}")
-    """
 
 
 if __name__ == "__main__":

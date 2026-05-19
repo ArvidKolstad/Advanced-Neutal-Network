@@ -38,6 +38,9 @@ class LongShortTermMemory(nn.Module):
 
         self.output_layer = nn.Linear(2 * hidden_dim * number_of_heads + marks_dim, 1)
 
+    def __str__(self):
+        return "LSTM"
+
     def forward(self, sentence, lengths, marks):
 
         packed = pack_padded_sequence(
@@ -121,7 +124,6 @@ class LongShortTermMemory(nn.Module):
             writer = Logger("BILSTM")
 
         min_val_loss = float("inf")
-        epoch_number = 0
         epochs_with_increased_loss = 0
 
         print(f"training running on {self.device}")
@@ -137,8 +139,8 @@ class LongShortTermMemory(nn.Module):
                 )
 
                 if writer is not None:
-                    writer.update_loss(avg_loss, avg_val_loss, epoch_number)
-                    writer.update_f1_score(avg_f1_score, epoch_number)
+                    writer.update_loss(avg_loss, avg_val_loss, epoch)
+                    writer.update_f1_score(avg_f1_score, epoch)
                 else:
                     print(
                         f"Training loss: {avg_loss:.4f}, Validation loss: {avg_val_loss:.4f}, F1 Score: {avg_f1_score:.4}"
@@ -159,7 +161,6 @@ class LongShortTermMemory(nn.Module):
                 if epochs_with_increased_loss == stopper:
                     print("training stopped early")
                     break
-                epoch_number += 1
 
         finally:
             if writer is not None:
@@ -224,7 +225,6 @@ def kCV(
 
         train_params["val_loader"] = val_loader
 
-        # 1. Create a local copy of train_params to avoid reference leaks
         local_train_params = train_params.copy()
         local_train_params["train_loader"] = train_loader
         local_train_params["val_loader"] = val_loader
@@ -232,7 +232,6 @@ def kCV(
         m = model(**model_params)
         optimizer_settings["params"] = m.parameters()
 
-        # Create optimizer and scheduler locally
         opt = optimizer(**optimizer_settings)
         local_train_params["optimizer"] = opt
 
@@ -404,7 +403,7 @@ def plot_hyper_parameter(path):
 
 def main():
     # run_hyperparameter_opt()
-    plot_hyper_parameter("./data/l2_hpv.npz")
+    # plot_hyper_parameter("./data/l2_hpv.npz")
     model, val_loader = get_trained_model()
 
     model = model.to(torch.device("cuda"))

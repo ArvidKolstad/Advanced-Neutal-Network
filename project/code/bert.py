@@ -21,13 +21,20 @@ from typing import Optional
 
 
 class BERTweet(nn.Module):
-    def __init__(self, dropout_rate, threshold=0.5):
+    def __init__(self, dropout_rate, threshold=0.5, freeze_bert=False):
         super(BERTweet, self).__init__()
         self.bertweet = AutoModel.from_pretrained("vinai/bertweet-base")
         self.dropout = nn.Dropout(dropout_rate)
         self.classifier = nn.Linear(768, 1)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.threshold = threshold
+
+        if freeze_bert:
+            for params in self.bertweet.parameters():
+                params.requires_grad = False
+
+    def __str__(self):
+        return "BERTweet"
 
     def forward(self, x, attention_mask):
         output = self.bertweet(input_ids=x, attention_mask=attention_mask)
@@ -70,7 +77,6 @@ class BERTweet(nn.Module):
         total_loss = 0.0
         total_batches = len(train_loader)
         for train_input, train_mask, train_labels in train_loader:
-
             train_input, train_mask, train_labels = (
                 train_input.to(self.device),
                 train_mask.to(self.device),
@@ -81,6 +87,7 @@ class BERTweet(nn.Module):
             loss = loss_function(output, train_labels)
             total_loss += loss.item()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
             optimizer.step()
         mean_loss = total_loss / total_batches
 
@@ -95,14 +102,13 @@ class BERTweet(nn.Module):
         optimizer,
         scheduler,
         logger=True,
-        stopper=1,
+        stopper=3,
     ):
         writer: Optional[SummaryWriter] = None
         if logger:
             writer = Logger("BERT")
 
         min_val_loss = float("inf")
-        epoch_number = 0
         epochs_with_increased_loss = 0
 
         print(f"training running on {self.device}")
@@ -118,8 +124,8 @@ class BERTweet(nn.Module):
                 )
 
                 if writer is not None:
-                    writer.update_loss(avg_loss, avg_val_loss, epoch_number)
-                    writer.update_f1_score(avg_f1_score, epoch_number)
+                    writer.update_loss(avg_loss, avg_val_loss, epoch)
+                    writer.update_f1_score(avg_f1_score, epoch)
                 else:
                     print(
                         f"Training loss: {avg_loss:.4f}, Validation loss: {avg_val_loss:.4f}, F1 Score: {avg_f1_score:.4}"
@@ -140,7 +146,6 @@ class BERTweet(nn.Module):
                 if epochs_with_increased_loss == stopper:
                     print("training stopped early")
                     break
-                epoch_number += 1
 
         finally:
             if writer is not None:
@@ -252,15 +257,15 @@ def run_hyperparameter_opt():
         "logger": False,
     }
 
-    optimizer = torch.optim.Adam
+    optimizer = torch.optim.AdamW
     optimizer_settings = {"params": None, "lr": 0.001, "weight_decay": 0.001}
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau
     scheduler_settings = {
         "optimizer": None,
         "mode": "min",
-        "factor": 0.2,
-        "patience": 5,
+        "factor": 0.5,
+        "patience": 2,
     }
     df_train = pd.read_csv("./data/train.csv")
     df_train = text_preprocess(df_train, "BERT")
@@ -303,18 +308,34 @@ def run_hyperparameter_opt():
     )
 
 
+def get_llrd_param_groups(model, base_lr=5e-5, decay=0.5):
+    named_layers = [(name, module) for name, module in model.named_children()]
+    num_layers = len(named_layers)
+
+    param_groups = []
+    for i, (name, module) in enumerate(named_layers):
+        layer_lr = base_lr * (decay ** (num_layers - 1 - i))
+        param_groups.append(
+            {"params": module.parameters(), "lr": layer_lr, "name": name}
+        )
+        print(f"{name}: lr = {layer_lr:.2e}")
+
+    return param_groups
+
+
 def main():
     max_epochs = 5
-    model_params = {
-        "dropout_rate": 0.2,
-        "threshold": 0.5,
-    }
+    model_params = {"dropout_rate": 0.1, "threshold": 0.5, "freeze_bert": True}
     model = BERTweet(**model_params)
+    # param_groups = get_llrd_param_groups(model.bertweet)
+    linear_layer = {"params": model.classifier.parameters(), "lr": 1e-3}
+    # param_groups.append(linear_layer)
 
     loss_function = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
+    optimizer = torch.optim.AdamW(**linear_layer)
+
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=5
+        optimizer, mode="min", factor=0.5, patience=2
     )
 
     val_frac = 0.33
@@ -354,8 +375,6 @@ def main():
     }
 
     model.train_params(**train_settings)
-
-    print("hello")
 
 
 if __name__ == "__main__":

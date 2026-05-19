@@ -16,8 +16,17 @@ def load_fasttext():
     return ft
 
 
-FAST_TEXT = load_fasttext()
-BERT = AutoTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
+_FAST_TEXT = None
+
+
+def get_fasttext():
+    global _FAST_TEXT
+    if _FAST_TEXT is None:
+        _FAST_TEXT = load_fasttext()
+    return _FAST_TEXT
+
+
+_BERT = AutoTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
 
 
 class SarcasmDataset(Dataset):
@@ -31,8 +40,8 @@ class SarcasmDataset(Dataset):
         self.sentences = sentences
         self.sarcasm_markers = sarcasm_markers
         self.labels = labels
-        self.embedder_fasttext = FAST_TEXT
-        self.embedder_bert = BERT
+        self.embedder_fasttext = _FAST_TEXT
+        self.embedder_bert = _BERT
         self.model = model
 
     def __len__(self) -> int:
@@ -64,10 +73,10 @@ class SarcasmDataset(Dataset):
                 padding="max_length",
                 max_length=100,
                 truncation=True,
-                return_tensor="pt",
+                return_tensors="pt",
             )
-            input_ids = torch.tensor(token["input_ids"])
-            attention_mask = torch.tensor(token["attention_mask"])
+            input_ids = token["input_ids"].squeeze()
+            attention_mask = token["attention_mask"].squeeze()
 
             label = self.labels[index]
             return input_ids, attention_mask, label
@@ -180,10 +189,10 @@ def text_preprocess(data_frame: pd.DataFrame, model: str) -> pd.DataFrame:
 
 
 def main():
-    train_split = 0.75
+    test_split = 0.25
     wanted_columns = ["label", "comment"]
     df = load_dataset("reddit", wanted_columns)
-    df_train, df_test = train_val_split(df, train_split)
+    df_train, df_test = train_val_split(df, test_split)
     df_train.to_csv("data/train.csv")
     df_test.to_csv("data/test.csv")
 
