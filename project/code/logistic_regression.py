@@ -1,4 +1,5 @@
 import torch.nn as nn
+import numpy as np
 import pandas as pd
 from typing import Optional
 import torch
@@ -22,9 +23,12 @@ class LogisticRegression(nn.Module):
         output = self.layer(x)
         return output
 
-    def validate_model(self, val_loader: DataLoader) -> float:
+    def validate_model(
+        self, val_loader: DataLoader, loss_function
+    ) -> tuple[float, float]:
         self.eval()
         f1_score = 0.0
+        total_loss = 0.0
         total_batches = len(val_loader)
 
         with torch.no_grad():
@@ -35,12 +39,17 @@ class LogisticRegression(nn.Module):
                 )
 
                 logits = self(val_input)
+                loss = loss_function(logits, val_target)
+
+                total_loss += loss.item()
                 probs = torch.sigmoid(logits).cpu()
                 preds = (probs > self.threshold).int()
                 f1_score += get_f1_score(preds, val_target)
 
         mean_f1_score = f1_score / total_batches
-        return mean_f1_score
+        mean_val_loss = total_loss / total_batches
+
+        return mean_f1_score, mean_val_loss
 
     def train_epoch(self, train_loader, loss_function, optimizer):
         self.train()
@@ -53,8 +62,8 @@ class LogisticRegression(nn.Module):
                 train_labels.to(self.device),
             )
             optimizer.zero_grad()
-            output = self(train_input)
-            loss = loss_function(output, train_labels)
+            logits = self(train_input)
+            loss = loss_function(logits, train_labels)
             total_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -76,8 +85,7 @@ class LogisticRegression(nn.Module):
         if logger:
             writer = Logger("LogReg")
 
-        max_f1_score = 0
-        epoch_number = 0
+        max_loss = np.inf
 
         print(f"training running on {self.device}")
         self.to(self.device)
@@ -86,21 +94,22 @@ class LogisticRegression(nn.Module):
             print(f"Epoch: {epoch+1}")
 
             avg_loss = self.train_epoch(train_loader, loss_function, optimizer)
-            avg_f1_score = self.validate_model(val_loader)
+            avg_f1_score, avg_val_loss = self.validate_model(val_loader, loss_function)
 
             if writer is not None:
-                writer.update_loss(avg_loss, epoch_number)
-                writer.update_f1_score(avg_f1_score, epoch_number)
+                writer.update_loss(avg_loss, avg_val_loss, epoch)
+                writer.update_f1_score(avg_f1_score, epoch)
             else:
-                print(f"Training loss: {avg_loss}, Validation loss: {avg_f1_score}")
+                print(
+                    f"Training loss: {avg_loss:.4f}, Validation loss: {avg_val_loss:.4f},F1-score: {avg_f1_score:.4f} "
+                )
             scheduler.step(avg_f1_score)
 
-            if (avg_f1_score > max_f1_score) and writer is not None:
-                max_f1_score = avg_f1_score
+            if (avg_val_loss < max_loss) and writer is not None:
+                max_loss = avg_val_loss
                 torch.save(
                     self.state_dict(), os.path.join(writer.log_dir, "best_model.pth")
                 )
-            epoch_number += 1
 
         if writer is not None:
             writer.close()
@@ -108,7 +117,7 @@ class LogisticRegression(nn.Module):
 
 def main():
     lang_vec = 300
-    max_epochs = 200
+    max_epochs = 30
 
     sarcasm_markers_count = 4
     val_frac = 0.33
@@ -152,9 +161,9 @@ def main():
     )
 
     loss_function = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", factor=0.5, patience=8
+        optimizer, mode="min", factor=0.5, patience=8
     )
     train_settings = {
         "max_epochs": max_epochs,
@@ -166,22 +175,27 @@ def main():
         "logger": True,
     }
 
-    #    model.train_params(**train_settings)
+    model.train_params(**train_settings)
+
+    """
 
     model = LogisticRegression(input_dim).to(torch.device("cuda"))
     model.load_state_dict(
         torch.load("./runs/LogReg_20260513_121528/best_model.pth", weights_only=True)
     )
 
-    best_threshold, best_f1_score = get_opt_threshold(model, train_loader)
+    best_threshold, best_f1_score = get_opt_threshold(
+        model, train_loader, loss_function
+    )
 
     print(
         f"Best threshold: {best_threshold:.3f}, with a F1-score of: {best_f1_score:.3f}"
     )
     model.threshold = best_threshold
 
-    f1_score_test = model.validate_model(test_loader)
+    f1_score_test, _ = model.validate_model(test_loader, loss_function)
     print(f"Final model F1-score: {f1_score_test}")
+    """
 
 
 if __name__ == "__main__":
