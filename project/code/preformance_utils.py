@@ -3,9 +3,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import torch
-from bert import BERTweet
-from lstm import LongShortTermMemory
-from logistic_regression import LogisticRegression
 
 
 def get_confusion_matrix(pred, label, path):
@@ -21,6 +18,10 @@ def get_f1_score(preds, labels):
 
 
 def unpack_for_model(batch, model) -> tuple[list[torch.Tensor], torch.Tensor]:
+    from lstm import LongShortTermMemory
+    from bert import BERTweet
+    from logistic_regression import LogisticRegression
+
     if type(model) == LogisticRegression:
         inputs, target = batch
         inputs = [inputs]
