@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 import os
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from preformance_utils import get_f1_score
+from preformance_utils import get_f1_score, get_final_evaluation
 
 
 class LongShortTermMemory(nn.Module):
@@ -358,7 +358,7 @@ def get_trained_model():
     train_loader = DataLoader(
         data_set_train,
         batch_size=32,
-        num_workers=10,
+        num_workers=4,
         shuffle=True,
         pin_memory=True,
         collate_fn=bilstm_collate,
@@ -366,7 +366,7 @@ def get_trained_model():
     val_loader = DataLoader(
         data_set_val,
         batch_size=64,
-        num_workers=10,
+        num_workers=4,
         shuffle=False,
         pin_memory=True,
         collate_fn=bilstm_collate,
@@ -402,18 +402,13 @@ def plot_hyper_parameter(path):
 
 
 def main():
-    # run_hyperparameter_opt()
-    # plot_hyper_parameter("./data/l2_hpv.npz")
     model, val_loader = get_trained_model()
 
     model = model.to(torch.device("cuda"))
 
-    best_thershold, best_f1_score = get_opt_threshold(
-        model, val_loader, nn.BCEWithLogitsLoss()
-    )
+    best_thershold, best_f1_score = get_opt_threshold(model, val_loader)
     print(f"f1 score {best_f1_score:.4}, threshold function {best_thershold}")
 
-    """
     df_test = pd.read_csv("./data/test.csv")
 
     df_test = text_preprocess(df_test, "BILSTM")
@@ -422,15 +417,12 @@ def main():
     test_loader = DataLoader(
         data_set_test,
         batch_size=64,
-        num_workers=10,
+        num_workers=4,
         shuffle=False,
         pin_memory=True,
         collate_fn=bilstm_collate,
     )
-    loss_function = nn.BCELoss()
-    f1_score, loss_function = model.validate_model(test_loader, loss_function)
-    print(f"f1 score {f1_score}, loss function {loss_function}")
-    """
+    get_final_evaluation(model, test_loader)
 
 
 if __name__ == "__main__":

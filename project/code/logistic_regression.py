@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from data_preprocess import text_preprocess, create_dataset_fast_text, train_val_split
 from train_utils import Logger, get_opt_threshold
 from torch.utils.tensorboard import SummaryWriter
-from preformance_utils import get_f1_score
+from preformance_utils import get_f1_score, get_final_evaluation
 import os
 
 
@@ -38,16 +38,16 @@ class LogisticRegression(nn.Module):
             for val_input, val_target in val_loader:
                 val_input, val_target = (
                     val_input.to(self.device),
-                    val_target.int(),
+                    val_target,
                 )
 
-                logits = self(val_input)
+                logits = self(val_input).cpu()
                 loss = loss_function(logits, val_target)
 
                 total_loss += loss.item()
-                probs = torch.sigmoid(logits).cpu()
+                probs = torch.sigmoid(logits)
                 preds = (probs > self.threshold).int()
-                f1_score += get_f1_score(preds, val_target)
+                f1_score += get_f1_score(preds, val_target.int())
 
         mean_f1_score = f1_score / total_batches
         mean_val_loss = total_loss / total_batches
@@ -119,6 +119,7 @@ class LogisticRegression(nn.Module):
 
 
 def main():
+
     lang_vec = 300
     max_epochs = 30
 
@@ -143,30 +144,24 @@ def main():
     train_loader = DataLoader(
         data_set_train,
         batch_size=32,
-        num_workers=10,
+        num_workers=5,
         shuffle=True,
         pin_memory=True,
+        persistent_workers=True,
     )
     val_loader = DataLoader(
         data_set_val,
         batch_size=64,
-        num_workers=10,
-        shuffle=True,
+        num_workers=5,
+        shuffle=False,
         pin_memory=True,
-    )
-
-    test_loader = DataLoader(
-        data_set_test,
-        batch_size=64,
-        num_workers=10,
-        shuffle=True,
-        pin_memory=True,
+        persistent_workers=True,
     )
 
     loss_function = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=8
+        optimizer, mode="min", factor=0.5, patience=3
     )
     train_settings = {
         "max_epochs": max_epochs,
@@ -180,15 +175,25 @@ def main():
 
     model.train_params(**train_settings)
 
-    best_threshold, best_f1_score = get_opt_threshold(model, val_loader, loss_function)
+    del train_loader
+
+    test_loader = DataLoader(
+        data_set_test,
+        batch_size=64,
+        num_workers=5,
+        shuffle=True,
+        pin_memory=True,
+        persistent_workers=True,
+    )
+
+    best_threshold, best_f1_score = get_opt_threshold(model, val_loader)
 
     print(
         f"Best threshold: {best_threshold:.3f}, with a F1-score of: {best_f1_score:.3f}"
     )
     model.threshold = best_threshold
 
-    f1_score_test, _ = model.validate_model(test_loader, loss_function)
-    print(f"Final model F1-score: {f1_score_test}")
+    get_final_evaluation(model, test_loader)
 
 
 if __name__ == "__main__":

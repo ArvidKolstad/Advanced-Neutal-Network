@@ -16,14 +16,13 @@ def load_fasttext():
     return ft
 
 
-_FAST_TEXT = None
+run_fast_text = False
 
 
-def get_fasttext():
-    global _FAST_TEXT
-    if _FAST_TEXT is None:
-        _FAST_TEXT = load_fasttext()
-    return _FAST_TEXT
+if run_fast_text:
+    _FAST_TEXT = load_fasttext()
+else:
+    _FAST_TEXT = None
 
 
 _BERT = AutoTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
@@ -189,12 +188,7 @@ def text_preprocess(data_frame: pd.DataFrame, model: str) -> pd.DataFrame:
 
 
 def main():
-    test_split = 0.25
-    wanted_columns = ["label", "comment"]
-    df = load_dataset("reddit", wanted_columns)
-    df_train, df_test = train_val_split(df, test_split)
-    df_train.to_csv("data/train.csv")
-    df_test.to_csv("data/test.csv")
+    print("Running data_preprocess.py")
 
 
 if __name__ == "__main__":

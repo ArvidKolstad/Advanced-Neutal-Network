@@ -3,12 +3,14 @@ import gc
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
+from transformers import get_linear_schedule_with_warmup
 from torch import nn
 from torch.utils.data import DataLoader
 from transformers import AutoModel
 from preformance_utils import get_f1_score
 from train_utils import Logger, get_opt_threshold
 from torch.utils.tensorboard import SummaryWriter
+from preformance_utils import get_final_evaluation
 from data_preprocess import (
     text_preprocess,
     create_dataset_fast_text,
@@ -38,16 +40,15 @@ class BERTweet(nn.Module):
 
     def forward(self, x, attention_mask):
         output = self.bertweet(input_ids=x, attention_mask=attention_mask)
-        first_token_hidden_layer = output.pooler_output
-        layer = self.dropout(first_token_hidden_layer)
+        cls_hidden_state = output[0][:, 0, :]
+        layer = self.dropout(cls_hidden_state)
         output = self.classifier(layer)
         return output
 
-    def validate_model(self, val_loader: DataLoader, loss_function) -> tuple:
+    def validate_model(self, val_loader, loss_function):
         self.eval()
         loss_val = 0.0
-        f1_score = 0.0
-        total_batches = len(val_loader)
+        all_preds, all_targets = [], []
 
         with torch.no_grad():
             for val_input, val_mask, val_target in val_loader:
@@ -56,23 +57,20 @@ class BERTweet(nn.Module):
                     val_mask.to(self.device),
                     val_target.to(self.device).float(),
                 )
-
                 logits = self(val_input, val_mask).squeeze()
-                loss = loss_function(logits, val_target)
-
-                loss_val += loss.item()
+                loss_val += loss_function(logits, val_target).item()
 
                 probs = torch.sigmoid(logits).detach().cpu()
+                all_preds.append((probs > self.threshold).int())
+                all_targets.append(val_target.cpu())
 
-                preds = (probs > self.threshold).int()
+        all_preds = torch.cat(all_preds)
+        all_targets = torch.cat(all_targets)
+        mean_val_loss = loss_val / len(val_loader)
+        f1 = get_f1_score(all_preds, all_targets)
+        return f1, mean_val_loss
 
-                f1_score += get_f1_score(preds, val_target.cpu())
-
-        mean_val_loss = loss_val / total_batches
-        mean_f1_score = f1_score / total_batches
-        return mean_f1_score, mean_val_loss
-
-    def train_epoch(self, train_loader, loss_function, optimizer):
+    def train_epoch(self, train_loader, loss_function, optimizer, scheduler):
         self.train()
         total_loss = 0.0
         total_batches = len(train_loader)
@@ -89,6 +87,8 @@ class BERTweet(nn.Module):
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
             optimizer.step()
+            scheduler.step()
+
         mean_loss = total_loss / total_batches
 
         return mean_loss
@@ -118,7 +118,9 @@ class BERTweet(nn.Module):
             for epoch in range(max_epochs):
                 print(f"Epoch: {epoch+1}")
 
-                avg_loss = self.train_epoch(train_loader, loss_function, optimizer)
+                avg_loss = self.train_epoch(
+                    train_loader, loss_function, optimizer, scheduler
+                )
                 avg_f1_score, avg_val_loss = self.validate_model(
                     val_loader, loss_function
                 )
@@ -130,7 +132,6 @@ class BERTweet(nn.Module):
                     print(
                         f"Training loss: {avg_loss:.4f}, Validation loss: {avg_val_loss:.4f}, F1 Score: {avg_f1_score:.4}"
                     )
-                scheduler.step(avg_val_loss)
 
                 if min_val_loss > avg_val_loss:
                     epochs_with_increased_loss = 0
@@ -308,60 +309,76 @@ def run_hyperparameter_opt():
     )
 
 
-def get_llrd_param_groups(model, base_lr=5e-5, decay=0.5):
-    named_layers = [(name, module) for name, module in model.named_children()]
-    num_layers = len(named_layers)
+def get_llrd_param_groups(model, base_lr=5e-5, decay=0.8):
 
     param_groups = []
-    for i, (name, module) in enumerate(named_layers):
-        layer_lr = base_lr * (decay ** (num_layers - 1 - i))
-        param_groups.append(
-            {"params": module.parameters(), "lr": layer_lr, "name": name}
-        )
-        print(f"{name}: lr = {layer_lr:.2e}")
+    param_groups.append(
+        {"params": model.embeddings.parameters(), "lr": base_lr * (decay**12)}
+    )
+
+    for i, layer in enumerate(model.encoder.layer):
+        layer_lr = base_lr * (decay ** (11 - i))
+        param_groups.append({"params": layer.parameters(), "lr": layer_lr})
+    param_groups.append({"params": model.pooler.parameters(), "lr": base_lr})
 
     return param_groups
 
 
 def main():
     max_epochs = 5
-    model_params = {"dropout_rate": 0.1, "threshold": 0.5, "freeze_bert": True}
+    model_params = {"dropout_rate": 0.1, "threshold": 0.5, "freeze_bert": False}
     model = BERTweet(**model_params)
-    # param_groups = get_llrd_param_groups(model.bertweet)
+    param_groups = get_llrd_param_groups(model.bertweet)
     linear_layer = {"params": model.classifier.parameters(), "lr": 1e-3}
-    # param_groups.append(linear_layer)
+    param_groups.append(linear_layer)
 
     loss_function = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.AdamW(**linear_layer)
-
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=2
-    )
+    optimizer = torch.optim.AdamW(param_groups)
 
     val_frac = 0.33
 
     df_train = pd.read_csv("./data/train.csv")
+    df_test = pd.read_csv("./data/test.csv")
 
     df_train = text_preprocess(df_train, "BERT")
+    df_test = text_preprocess(df_test, "BERT")
 
     df_train, df_val = train_val_split(df_train, val_frac)
 
     data_set_train = create_dataset_fast_text(df_train, model="BERT")
     data_set_val = create_dataset_fast_text(df_val, model="BERT")
+    data_set_test = create_dataset_fast_text(df_test, model="BERT")
 
     train_loader = DataLoader(
         data_set_train,
         batch_size=32,
-        num_workers=10,
+        num_workers=4,
         shuffle=True,
         pin_memory=True,
     )
     val_loader = DataLoader(
         data_set_val,
         batch_size=64,
-        num_workers=10,
+        num_workers=4,
         shuffle=False,
         pin_memory=True,
+    )
+    test_loader = DataLoader(
+        data_set_test,
+        batch_size=64,
+        num_workers=4,
+        shuffle=False,
+        pin_memory=True,
+    )
+
+    num_training_steps_per_epoch = len(train_loader)
+    total_training_steps = num_training_steps_per_epoch * max_epochs
+    num_warmup_steps = int(0.10 * total_training_steps)
+
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer=optimizer,
+        num_warmup_steps=num_warmup_steps,
+        num_training_steps=total_training_steps,
     )
 
     train_settings = {
@@ -375,6 +392,9 @@ def main():
     }
 
     model.train_params(**train_settings)
+
+    get_opt_threshold(model, val_loader)
+    get_final_evaluation(model, test_loader)
 
 
 if __name__ == "__main__":

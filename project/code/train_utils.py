@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
+from preformance_utils import get_f1_score
 from datetime import datetime
+import torch
 import os
 
 
@@ -42,20 +44,31 @@ def train_val_split(
     return train_data, val_data
 
 
-def get_opt_threshold(model, training_loader, loss_function):
-    thresholds = np.arange(0, 1, 0.01)
-    best_f1_score = 0.0
-    best_threshold = 0.5
-    for threshold in thresholds:
-        print(f"Now testing for threshold: {threshold}")
-        model.threshold = threshold
-        f1_score, mean_val_score = model.validate_model(training_loader, loss_function)
-        if best_f1_score < f1_score:
-            best_f1_score = f1_score
-            best_threshold = threshold
-    model.threshold = best_threshold
+def get_opt_threshold(model, loader):
+    model.eval()
+    all_probs, all_targets = [], []
 
-    return best_threshold, best_f1_score
+    with torch.no_grad():
+        for val_input, val_mask, val_target in loader:
+            val_input, val_mask = val_input.to(model.device), val_mask.to(model.device)
+            logits = model(val_input, val_mask).squeeze()
+            probs = torch.sigmoid(logits).detach().cpu()
+            all_probs.append(probs)
+            all_targets.append(val_target)
+
+    all_probs = torch.cat(all_probs)
+    all_targets = torch.cat(all_targets)
+
+    best_f1, best_threshold = 0.0, 0.5
+    for threshold in np.arange(0.1, 0.9, 0.01):
+        preds = (all_probs > threshold).int()
+        f1 = get_f1_score(preds, all_targets)
+        if f1 > best_f1:
+            best_f1 = f1
+            best_threshold = threshold
+
+    model.threshold = best_threshold
+    return best_threshold, best_f1
 
 
 def main():
