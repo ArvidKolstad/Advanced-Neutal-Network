@@ -106,7 +106,7 @@ class LogisticRegression(nn.Module):
                 print(
                     f"Training loss: {avg_loss:.4f}, Validation loss: {avg_val_loss:.4f},F1-score: {avg_f1_score:.4f} "
                 )
-            scheduler.step(avg_f1_score)
+            scheduler.step(avg_val_loss)
 
             if (avg_val_loss < max_loss) and writer is not None:
                 max_loss = avg_val_loss
@@ -119,7 +119,6 @@ class LogisticRegression(nn.Module):
 
 
 def main():
-
     lang_vec = 300
     max_epochs = 30
 

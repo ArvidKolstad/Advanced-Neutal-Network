@@ -1,10 +1,7 @@
-from sklearn.model_selection import StratifiedKFold
-from torch.utils.data import DataLoader, Dataset
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
-from preformance_utils import get_f1_score
+from preformance_utils import get_f1_score, unpack_for_model
 from datetime import datetime
 import torch
 import os
@@ -49,12 +46,14 @@ def get_opt_threshold(model, loader):
     all_probs, all_targets = [], []
 
     with torch.no_grad():
-        for val_input, val_mask, val_target in loader:
-            val_input, val_mask = val_input.to(model.device), val_mask.to(model.device)
-            logits = model(val_input, val_mask).squeeze()
+        for batch in loader:
+            inputs, outputs = unpack_for_model(batch, model)
+            inputs = [x.to(model.device) for x in inputs]
+
+            logits = model(*inputs).squeeze()
             probs = torch.sigmoid(logits).detach().cpu()
             all_probs.append(probs)
-            all_targets.append(val_target)
+            all_targets.append(outputs)
 
     all_probs = torch.cat(all_probs)
     all_targets = torch.cat(all_targets)

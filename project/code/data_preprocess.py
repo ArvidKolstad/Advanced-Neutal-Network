@@ -16,7 +16,7 @@ def load_fasttext():
     return ft
 
 
-run_fast_text = False
+run_fast_text = True
 
 
 if run_fast_text:
