@@ -1,5 +1,5 @@
-% ****** Start of file template-TIF360-FYM360-blindtext.tex ******
-%
+% **** Start of file template-TIF360-FYM360-blindtext.tex ******
+
 % use on Overleaf!!!!
 %
 \documentclass[%
@@ -15,12 +15,14 @@
 %\usepackage[mathlines]{lineno}% Enable numbering of text and display math
 %\linenumbers\relax % Commence numbering lines
 \usepackage{xcolor}
+\usepackage{float}
 
 \usepackage{lipsum}
 
 \begin{document}
 
-\title{[C] Can a computer detect human sarcasm?}
+\title{[C] “Yeah, Right…”
+	Sarcasm Classification on  Social Media}
 
 \author{Arvid Kolstad}
 
@@ -31,8 +33,7 @@
 	%%% - B1 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 	%%% Customize this part: text between - B1 - and - E1 - must not appear in the final report 
 
-	\noindent{Social} behavior in humans are a complex subject that can seem almost impossible to fully understand. A good example of this are usage of sarcasm in interactions, which is famously easily to create misunderstandings, especially when written, because of intonation and voice features are often used to clear markers for a sarcastic comment. Therefore this project aims to explore how well different machine learning models can classify sarcasm from orinary sentences. The models that will be examined are Logistic regression with TF-IDF features, LSTM and BERT. The data that will be used to training, validation and testing will be sarcastic comments taken from two social media platforms. After training and validation, the models preformance was compared and the result was ---. (Some more discussion will be added here too)
-
+	\noindent{Social} behavior in humans are a complex subject that can seem almost impossible to fully understand. A good example of this are usage of sarcasm in interactions, which is famously easily to create misunderstandings, especially when written, because of intonation and voice features are often used to clear markers for a sarcastic comment. Combined with a internet where endless of conversations take place everyday about the most obscure topics makes this a complicated and nuanced classification problem. This creates the interesting question: How well can the the machines, which we run these websites on, understand what is really being said? Therefore this project aims to explore how well different machine learning models can classify sarcasm from sentences made on social media.
 	%%% - E1 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 	\begin{description} %%% DO NOT CHANGE!
@@ -52,39 +53,20 @@
 
 %%% - B2 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B2 - and - E2 - must not appear in the final report 
-\noindent
-\fbox{\parbox[t][][t]{\columnwidth}{
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{5}} out of \textbf{44}
+\noindent{Human} communication is a rich and multifaceted phenomenon, shaped by tone, context, cultural background, and shared understanding between speakers. Among its many complexities, sarcasm stands out as a particularly challenging form of expression, one that relies heavily on non-verbal cues such as intonation, facial expression, and vocal emphasis to convey a meaning that is often the direct opposite of what is literally stated. While this poses little difficulty in face-to-face conversation, the written word strips away these contextual signals, leaving the reader to infer intent from text alone.
 
-		In this section you have to:
-		Provide the reader of the general context of the research question that you chose to investigate, providing the relevant peer-reviewed references.  For example, a citation looks like \cite{SharmaEtAl2026} or \cite{Archana2025, EkeEtAl202021, JamilEtAl2021, KumarEtAl2020}.
+\noindent{This} challenge is amplified dramatically in the context of social media, where vast volumes of informal, unstructured text are produced daily across platforms dedicated to virtually every topic imaginable. On these platforms, sarcasm is not only common but often central to the culture of communication, used for humor, criticism, and commentary alike. The absence of prosodic cues in this medium means that sarcastic remarks are frequently misread, even by human readers familiar with the context.
 
-		Remember: No subsectioning in the introduction.
+\noindent{For} automated systems tasked with making sense of this content, whether for sentiment analysis, content moderation, or opinion mining, the accurate detection of sarcasm represents a significant open problem. A model that fails to recognize sarcasm will systematically misinterpret the sentiment and intent behind a large portion of online discourse, undermining the reliability of any downstream analysis.
 
-		For references, use the command $\backslash${\tt cite}$\{\cdots\}$. \\
-		Example: $\backslash${\tt cite}$\{${\tt polya1945how}$\}$ gives \cite{polya1945how}.
-		Use the bib file {\tt biblio-TIF360-FYM360.bib} (provided with this template) for the bib items.
-	}}
+\noindent{This} report investigates the capacity of machine learning models to address this problem by classifying sarcastic statements drawn from social media text. By evaluating and comparing different modeling approaches, this work aims to shed light on how well computational systems can grasp one of the more elusive dimensions of human language.
 
 %%% - E2 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
-
-
 \section{\label{sec:overview}Overview} %%% DO NOT CHANGE!
-
 %%% - B3 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-%%% Customize this part: text between - B3 - and - E3 - must not appear in the final report 
+%%% Customize this part: text between - B3 - and - E3 - must not appear in the final report
 \noindent
-\fbox{\parbox[t][][t]{\columnwidth}{
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{6}} out of \textbf{44}
-
-		{In this section you provide an overview of the state of the art, related work and methods. Mention the methods that you could apply in your project, highlighting their use case scenarios, their features with advantages and disadvantages, and state whether they can be appropriate to use in your project. After this overview, you should state the method/model that you choose and also provide the motivation of your choice.
-			Make a table (see below) to summarize this discussion. Refer to the table (Tab.~\ref{tab:methodsoverview}) in the text.}
-	}}
-
+In this section a brief summary of the models used in this report can be found. To every model, there is a short discussion about it's advantages and weak point and an argument why the model was used.
 \begin{table*}
 	\caption{{\bf Overview of ML models used in this project.} Table where the different models used in the project is presented, their features explained and arguments for their fit to the project.
 	}
@@ -107,13 +89,13 @@
 		\hline
 		\hspace{0.1cm}
 		\parbox{1.8cm}{\begin{flushleft}
-				               Logistic regression with TF-IDF
+				               Logistic regression
 			               \end{flushleft}}
 		\hspace{0.1cm}
 		               &
 		\hspace{0.1cm}
 		\parbox{2.8cm}{\begin{flushleft}
-				               Model
+				               Classification Model
 			               \end{flushleft}}
 		\hspace{0.1cm}
 		               &
@@ -132,37 +114,37 @@
 		\hline
 		\hspace{0.1cm}
 		\parbox{1.8cm}{\begin{flushleft}
-				               LSTM
+				               BiLSTM with multi-head attention
 			               \end{flushleft}}
 		\hspace{0.1cm}
 		               &
 		\hspace{0.1cm}
 		\parbox{2.8cm}{\begin{flushleft}
-				               Model
+				               Classification Model
 			               \end{flushleft}}
 		\hspace{0.1cm} &
 		\hspace{0.1cm}
 		\parbox{5.5cm}{\begin{flushleft}
-				               Can capture word order which is important for sarcasm. Can connect words over larger distances in sentences. Also solves the vanishing gradient problem.
+				               Can capture word order and connect words over larger distances in sentences which is important for sarcasm. The attention mechanism can learn what words refers to each other and therefore understand the sentence better.
 			               \end{flushleft}}
 		\hspace{0.1cm}
 		               &
 		\hspace{0.1cm}
 		\parbox{5.5cm}{\begin{flushleft}
-				               Medium size model that works great for text classification.
+				               Medium size model that had great performance for its time.
 			               \end{flushleft}}
 		\hspace{0.1cm}
 		\\
 		\hline
 		\hspace{0.1cm}
 		\parbox{1.8cm}{\begin{flushleft}
-				               BERT
+				               BERTweet
 			               \end{flushleft}}
 		\hspace{0.1cm}
 		               &
 		\hspace{0.1cm}
 		\parbox{2.8cm}{\begin{flushleft}
-				               Model
+				               Classification Model
 			               \end{flushleft}}
 		\hspace{0.1cm} &
 		\hspace{0.1cm}
@@ -173,7 +155,7 @@
 		               &
 		\hspace{0.1cm}
 		\parbox{5.5cm}{\begin{flushleft}
-				               Large model that already a good understanding about our language, which makes it perfect for using in this setting.
+				               A large model that has a good understanding of our language, which makes it perfect for using in this classification problem.
 
 			               \end{flushleft}}
 		\hspace{0.1cm}
@@ -181,13 +163,18 @@
 		\hline
 	\end{tabular}
 \end{table*}
+\\ \\
+\noindent
+{\bf Method 1 - Logistic Regression.} \\{This model is rather simple and uses only a linear layer to classify the sentence from the vectorization. For this it uses the pre-trained model FastText \cite{grave2018learning} which is a more complex version of the famous Word2Vector. It can handle the problem of Out-Of-Vocabulary words by breaking up longer words into smaller parts that it does understand. This is great for social media text because of it's higher frequency of typos and slang. Due to the models simplicity, it does not understand words connection to other words and therefore this is a good model to use as a benchmark.}
+\\
 
+\noindent
+{\bf Method 2 BiLSTM with multi-head atttention.} \\{This model uses a recurrent network that takes each word vector, both from the start of the sentence, and the end of the sentence, and feeds these trough with the next word as input. After this the hidden states of the network gets fed into an attention network which learns how different words connects other. This is a good in between the Logistic Regression and the BERT-model and will hopfully display the importance of connections between words when it comes to classifying sarcasm.}
+\\
 
-{\bf Method 1 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{ EkeEtAl202021}.]}
+\noindent
+{\bf Method 3 BERT.}\\ {This model leans heavily on the pre-trained BERTweet model \cite{bertweet}, and leverages it's understanding of language to try to predict sarcasm. The BERTweet is a transformer encoder that first has been trained on a big dataset of english, and then have been fine tuned on 850 million tweets. This makes it good at understanding internet language and slang, which makes it perfect for this classification problem. It's without question the biggest model in this project and has over 100 million parameters, and has the best chances of scoring the highest.}
 
-{\bf Method 2 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{EkeEtAl202021}.]}
-
-{\bf Method 3 (substitute with the name of the method).} {[Discuss the use case scenarios of the method, their features with advantages and disadvantages / strong and weak points, and whether it is more or less suitable for the research question. It is a good idea to reference the literature \cite{EkeEtAl202021}.]}
 
 %%% - E3 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -195,28 +182,47 @@
 
 
 \section{\label{sec:method}Method} %%% DO NOT CHANGE!
-
 %%% - B4 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-%%% Customize this part: text between - B4 - and - E4 - must not appear in the final report 
-\begin{figure*}
+%%% Customize this part: text between - B4 - and - E4 - must not appear in the final report
+In this section we will first introduce the dataset and then we will go through the different models architecture and then explain the training pipeline. All the models are built in python by using the library PyTorch.
+\subsection{Dataset}
+The dataset that has been used in this project is the following \cite{SARC}. It's a dataset that was retrieved from the website Kaggle.com, and has been created by scraping the the social platform Reddit.com for comments. On the website you can put different labels on your comments to signal what the comment is about. One of these labels stands for that the comment has some sarcastic remarks in it, and this is what is used for classifying the dataset.The total number of comments is exactly 1 million and the dataset is perfectly balanced so 500K is labeled as normal and the other half is labeled as sarcastic. The dataset also contained the text that the comment answered to, what the authors name was, the name of the specific chat forum that the comment was written in and much more but the only data that was used in this project was the original comment and it's sarcasm label.
+\subsection{FastText}
+For both this model and the BiLSTM, the word embedder FastText is used \cite{grave2018learning}. It is a pre trained model that takes a word and transforms it into a 300 dimensional vector, and therefore makes it easier interpretable to a computer. This model was picked for the project for it's ability to handle Out-Of-Vocabulary words. If it stumbles upon a word that it doesn't recognize it tries to break down the word in smaller words that could make the word make sense. This is great for handling slang and spelling error that might not be included in the FastText set of known words. This model only handles word so special characters are removed before converting the word to a scentence. For sarcasm in text, these provide valuble markers so to not loose this information, 4 sarcasm pointer where extracted from each sentence. The pointers where the following:
+\begin{itemize}
+	\item Word where all letters where capitalized
+	\item The sequence "!!!"
+	\item The sequence "?!" or "!?"
+	\item The sequnece "..."
+\end{itemize}
+Other papers like \cite{9420094} and \cite{KumarEtAl2021} use more sarcasm pointers with higher complexity than what's used in this project, but with regards to time scope of the project it was edecided that these four pointers where enough.
+\subsection{Logistic Regression}
+\noindent
+This model is the simplest, and should have a hard time classifying sarcasm. Because of the fact that the comments can be of different lengths and to train a model input dimension must be constant, it was decided to take all the words in the comments and take the mean of this vector to create a sentence vector for every datapoint. This meant that the model only can learn roughly what the comment was about and all relationships between words get's lost. This vector is then extended with the sarcasm pointers and is then feed through the linear layer to a single value which get's classified with a sigmoid function and a threshold. A full flow chart of the model can be found in figure \ref{fig:selectedmethod}.
+\subsection{BiLSTM with multi-head attention}
+\noindent
+This model is highly inspired by \cite{KumarEtAl2021} with the difference that less sarcasm pointers where used. As in the Logistic Regression we first use the FastText to get the words into vectors, but instead of creating a mean sentence vector, we create a word matrix where every word is a column vector. This is then feed to the BiLSTM where the "Bi" means that we both run the LSTM from the first to the last word and from the last to the first word, which creates two different hidden states in each time step. This so that words both before and after a specific word should be able to impact the hidden state. Now we have a matri
+
+
+\begin{figure*}[h!]
 	\centering
-	\includegraphics[width=\textwidth]{Fig1_placeholder.pdf}
-	\caption{{\bf Method employed (change this text according to your project).} Write some explanatory text for the figure. Make sure that the figure is referenced in the text. The caption should be such that, together with the figure, allows the reader to understand the concepts in the figure itself.
-		\textcolor{blue}{\bf A figure describing the method/model is MANDATORY.} Missing to include a figure causes a {\bf deduction} (-3  points).
+	\includegraphics[width=\textwidth]{figures/Flowchart Whiteboard in Bright Green Lime Green Pink Corporate Neon Style.pdf}
+	\caption{{\bf Flowchart of the models used in the project:}
+		Architectural comparison of three sarcasm detection models. Top: a Logistic Regression baseline combining FastText sentence vectors and sarcasm pointers. Middle: a BiLSTM with multihead attention, using FastText word embeddings and sarcasm pointers as input. Bottom: a BERTweet transformer model with tokenization and a linear layer. All models output a prediction via sigmoid activation and thresholding.
 	}
 	\label{fig:selectedmethod}
+
 \end{figure*}
-
 \noindent
-\fbox{\parbox[t][][t]{\columnwidth}{
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{8}} out of \textbf{44}
+%\fbox{\parbox[t][][t]{\columnwidth}{
+%\textbf{Points:} \fbox{\bf \textcolor{magenta}{8}} out of \textbf{44}
 
-		Provide here the details of the method you have chosen for the project.
-		You should explain and provide enough detail such that your results can be reproduced following your method.
-		Compose a figure that contains / describes your method (mandatory). Refer to the figure (Fig.~\ref{fig:selectedmethod}) when describing the method in the text.
-		You can add a second figure if you believe it is necessary.
-	}}
-%%% - E4 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Provide here the details of the method you have chosen for the project.
+%You should explain and provide enough detail such that your results can be reproduced following your method.
+%Compose a figure that contains / describes your method (mandatory). Refer to the figure (Fig.~\ref{fig:selectedmethod}) when describing the method in the text.
+%You can add a second figure if you believe it is necessary.
+%}
+%%- E4 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
@@ -227,33 +233,41 @@
 %%% - B5 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B5 - and - E5 - must not appear in the final report 
 \noindent
-\fbox{\parbox[t][][t]{\columnwidth}{
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{8}} out of \textbf{44}
+%\fbox{\parbox[t][][t]{\columnwidth}{
+%\textbf{Points:} \fbox{\bf \textcolor{magenta}{8}} out of \textbf{44}
 
-		Here report and discuss the results of the project.
+%Here report and discuss the results of the project.
 
-		Remember to organize your results properly.
+%Remember to organize your results properly.
 
-		Reference your figures in the discussion. Example: Fig.~\ref{fig:res1}.
-	}}
+%Reference your figures in the discussion. Example: Fig.~\ref{fig:res1}.
+%}}
 
 
-\begin{figure}
+!
+
+%At some point in the discussion, Reference Fig.~\ref{fig:res2}. \\
+
+\begin{figure}[!h]
 	\centering
-	\includegraphics[width=\columnwidth]{Fig3.pdf}
-	\caption{{\bf Title Figure.} Write some explanatory text for the figure. Make sure that the figure is referenced in the text. The caption should be such that, together with the figure, allows the reader to understand the concepts in the figure itself.}
-	\label{fig:res1}
-\end{figure}
-
-
-At some point in the discussion, Reference Fig.~\ref{fig:res2}. \\
-
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=\columnwidth]{Fig2.pdf}
+	\includegraphics[width=\columnwidth]{figures/logreg_confusion_matrix.pdf}
 	\caption{{\bf Title Figure.} Write some explanatory text for the figure. Make sure that the figure is referenced in the text. The caption should be such that, together with the figure, allows the reader to understand the concepts in the figure itself.}
 	\label{fig:res2}
 \end{figure}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\columnwidth]{figures/LSTM_confusion_matrix.pdf}
+	\caption{{\bf Title Figure.} Write some explanatory text for the figure. Make sure that the figure is referenced in the text. The caption should be such that, together with the figure, allows the reader to understand the concepts in the figure itself.}
+	\label{fig:res2}
+\end{figure}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\columnwidth]{figures/BERTweet_confusion_matrix.pdf}
+	\caption{{\bf Title Figure.} Write some explanatory text for the figure. Make sure that the figure is referenced in the text. The caption should be such that, together with the figure, allows the reader to understand the concepts in the figure itself.}
+	\label{fig:res2}
+\end{figure}
+
+
 
 %%% - E5 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -265,12 +279,6 @@ At some point in the discussion, Reference Fig.~\ref{fig:res2}. \\
 %%% - B6 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B6 - and - E6 - must not appear in the final report 
 \noindent
-\fbox{\parbox[t][][t]{\columnwidth}{
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{4}} out of \textbf{44}
-
-		Here conclusions and outlook.
-	}}
-
 
 %%% - E6 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -282,15 +290,15 @@ At some point in the discussion, Reference Fig.~\ref{fig:res2}. \\
 
 %%% - B7 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B7 - and - E7 - must not appear in the final report 
-\noindent
-\fbox{\parbox[t][][t]{\columnwidth}{
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
+%\noindent
+%\fbox{\parbox[t][][t]{\columnwidth}{
+%\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
 
-		Mandatory in all cases (also in the case of 1-person team).
+%Mandatory in all cases (also in the case of 1-person team).
 
-		Add some text. See a possible text below.
-	}}
-Example: A.B. and C.D. conceived and implemented ... (adapt). E.F., G.H., contributed to .... etc etc. All authors ... (adapt).
+%Add some text. See a possible text below.
+%}}
+%Example: A.B. and C.D. conceived and implemented ... (adapt). E.F., G.H., contributed to .... etc etc. All authors ... (adapt).
 %%% - E7 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -300,14 +308,14 @@ Example: A.B. and C.D. conceived and implemented ... (adapt). E.F., G.H., contri
 %%% - B8 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B8 - and - E8 - must not appear in the final report 
 \noindent
-\fbox{\parbox[b][][t]{\columnwidth}{
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
+%\fbox{\parbox[b][][t]{\columnwidth}{
+%\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
 
-		Add some text. See a possible text below.
-	}}
+%Add some text. See a possible text below.
+%}}
 
-{{\bf Note:} A conflict of interest can also be known as {\emph competing interest}. A conflict of interest can occur when you, or your employer, or sponsor have a financial, commercial, legal, or professional relationship with other organizations, or with the people working with them, that could influence your research.
-	For example check here:} \href{https://authorservices.taylorandfrancis.com/editorial-policies/competing-interest/}{https://authorservices.taylorandfrancis.com/editorial-policies/competing-interest/}
+%{{\bf Note:} A conflict of interest can also be known as {\emph competing interest}. A conflict of interest can occur when you, or your employer, or sponsor have a financial, commercial, legal, or professional relationship with other organizations, or with the people working with them, that could influence your research.
+%For example check here:} \href{https://authorservices.taylorandfrancis.com/editorial-policies/competing-interest/}{https://authorservices.taylorandfrancis.com/editorial-policies/competing-interest/}
 %%% - E8 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -318,15 +326,15 @@ Example: A.B. and C.D. conceived and implemented ... (adapt). E.F., G.H., contri
 %%% - B9 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B9 - and - E9 - must not appear in the final report 
 \noindent
-\fbox{\parbox[b][][t]{\columnwidth}{
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
+%\fbox{\parbox[b][][t]{\columnwidth}{
+%\textbf{Points:} \fbox{\bf \textcolor{magenta}{1}} out of \textbf{44}
 
-		Add some text. See a possible text below.
-	}}
+%Add some text. See a possible text below.
+%}}
 
-Data is available for download at ....  / can be accessed from ....
+%Data is available for download at ....  / can be accessed from ....
 
-All source code and examples are made publicly available at ... . The version used in this study is archived in ... with DOI ...
+%All source code and examples are made publicly available at ... . The version used in this study is archived in ... with DOI ...
 %%% - E9 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -334,16 +342,10 @@ All source code and examples are made publicly available at ... . The version us
 %%% - B10 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B10 - and - E10 - must not appear in the final report 
 \noindent
-\fbox{\parbox[b][][t]{\columnwidth}{
-		Score for correct amount of relevant, peer reviewed {\bf References}:
-		\textbf{Points:} \fbox{\bf \textcolor{magenta}{5}} out of \textbf{44}
-	}}
 
 
 
 
-
-\bibliography{biblio-TIF360-FYM360} %%% DO NOT CHANGE!
-% Produces the bibliography via BibTeX.
+\bibliography{biblio-TIF360-FYM360}
 
 \end{document}
