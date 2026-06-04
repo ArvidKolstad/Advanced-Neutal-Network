@@ -33,9 +33,8 @@ class LongShortTermMemory(nn.Module):
             nn.Linear(2 * hidden_dim, hidden_dim, bias=False),
             nn.Tanh(),
             nn.Linear(hidden_dim, number_of_heads, bias=False),
-            nn.Softmax(dim=-2),
         )
-
+        self.softmax = nn.Softmax(dim=-2)
         self.output_layer = nn.Linear(2 * hidden_dim * number_of_heads + marks_dim, 1)
 
     def __str__(self):
@@ -51,7 +50,15 @@ class LongShortTermMemory(nn.Module):
         )
         H, _ = self.lstm(packed)
         H, _ = pad_packed_sequence(H, batch_first=True)
-        Z = self.attention_layer(H)
+        max_len = H.size(1)
+        mask = torch.arange(max_len, device=lengths.device)[None, :] < lengths[:, None]
+        mask = mask.unsqueeze(-1).to(self.device)
+
+        attn_scores = self.attention_layer(H)
+
+        attn_scores = attn_scores.masked_fill(~mask, -1e9)
+        Z = self.softmax(attn_scores)
+
         M = torch.matmul(Z.permute(0, 2, 1), H)
         concat = torch.cat((torch.flatten(M, start_dim=1), marks), dim=-1)
 
